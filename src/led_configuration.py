@@ -57,21 +57,20 @@ def fade_groups(daily_schedule, steps=50, delay=0.05):
 
     # Perform overlapping fades
     for step in range(steps + 1):
+        fade_in_ratio = step / steps
+        fade_out_ratio = 1 - fade_in_ratio
+
         for i, group in enumerate(groups):
             next_group = groups[(i + 1) % len(groups)]  # Get the next group in the sequence
 
-            # Calculate fade-in and fade-out values
-            fade_out_ratio = (steps - step) / steps
-            fade_in_ratio = step / steps
-
-            # Fade out current group
+            # Calculate fade-out values for the current group
             current_r = int(group["color"][0] * fade_out_ratio)
             current_g = int(group["color"][1] * fade_out_ratio)
             current_b = int(group["color"][2] * fade_out_ratio)
             for j in range(group["start"], group["end"]):
                 pixels[j] = (current_r, current_g, current_b)
 
-            # Fade in next group
+            # Calculate fade-in values for the next group
             next_r = int(next_group["color"][0] * fade_in_ratio)
             next_g = int(next_group["color"][1] * fade_in_ratio)
             next_b = int(next_group["color"][2] * fade_in_ratio)
