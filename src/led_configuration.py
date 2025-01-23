@@ -10,16 +10,15 @@ import json
 def format_schedule(schedule):
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
 
-
 logger = logging.getLogger(__name__)
 # LED Strip Configuration
-NUM_LEDS = 24  # Number of LEDs in your strip
+NUM_LEDS = 48  # Total number of LEDs in your strip
 PIN = board.D10  # GPIO pin connected to the LED strip
 BRIGHTNESS = 1  # Brightness (0.0 to 1.0)
 
 # Colors
 COLOR_WHITE = (255, 255, 255)
-COLOR_PURPLE = (50, 0, 90)  # garbage
+COLOR_PURPLE = (50, 0, 90)  # Garbage
 COLOR_GREEN = (0, 128, 0)  # Compost
 COLOR_BLUE = (0, 0, 255)  # Recycling
 COLOR_RED = (255, 0, 0)  # Holiday
@@ -43,6 +42,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
         pixels[i] = garbage_color  # First group (garbage)
         pixels[i + 8] = organics_color  # Second group (organics)
         pixels[i + 16] = recycling_color  # Third group (recycling)
+        pixels[i + 24] = recycling_color  # Fourth group (mimics 3rd group)
+        pixels[i + 32] = organics_color  # Fifth group (mimics 2nd group)
+        pixels[i + 40] = garbage_color  # Sixth group (mimics 1st group)
 
     # Apply changes to the strip
     pixels.show()
@@ -55,9 +57,12 @@ def set_holiday_lights():
     pixels.show()
 
 
-def fade_groups_cycling(daily_schedule, steps=50, delay=0.05):
-    """Cycle fades where one group fades in while the others fade out in a continuous loop."""
-    logger.info(f"Cycling fade for LEDs with overlap for: {daily_schedule['collections']}")
+def fade_groups_cycling_with_holiday(daily_schedule, steps=50, delay=0.05, holiday_interval=5):
+    """
+    Cycle fades where one group fades in while the others fade out,
+    periodically integrating a holiday red color.
+    """
+    logger.info(f"Cycling fade for LEDs with holiday integration for: {daily_schedule['collections']}")
 
     # Determine colors for each group
     garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
@@ -69,12 +74,16 @@ def fade_groups_cycling(daily_schedule, steps=50, delay=0.05):
         {"start": 0, "end": 8, "color": garbage_color},
         {"start": 8, "end": 16, "color": organics_color},
         {"start": 16, "end": 24, "color": recycling_color},
+        {"start": 24, "end": 32, "color": recycling_color},  # Mimics 3rd group
+        {"start": 32, "end": 40, "color": organics_color},  # Mimics 2nd group
+        {"start": 40, "end": 48, "color": garbage_color},  # Mimics 1st group
     ]
 
-    # Cycling fade logic
+    # Cycling fade logic with holiday integration
+    step_counter = 0
     while True:  # Infinite cycle
-        for i, group in enumerate(groups):
-            next_group = groups[(i + 1) % len(groups)]  # Get the next group in the sequence
+        for i, group in enumerate(groups[:3]):  # Only cycle the first three groups
+            next_group = groups[(i + 1) % 3]  # Get the next group in the sequence
 
             for step in range(steps + 1):
                 fade_in_ratio = step / steps
@@ -86,6 +95,8 @@ def fade_groups_cycling(daily_schedule, steps=50, delay=0.05):
                 current_b = int(group["color"][2] * fade_out_ratio)
                 for j in range(group["start"], group["end"]):
                     pixels[j] = (current_r, current_g, current_b)
+                for j in range(group["start"] + 24, group["start"] + 32):
+                    pixels[j] = (current_r, current_g, current_b)  # Mimic group
 
                 # Fade in next group
                 next_r = int(next_group["color"][0] * fade_in_ratio)
@@ -93,17 +104,26 @@ def fade_groups_cycling(daily_schedule, steps=50, delay=0.05):
                 next_b = int(next_group["color"][2] * fade_in_ratio)
                 for j in range(next_group["start"], next_group["end"]):
                     pixels[j] = (next_r, next_g, next_b)
+                for j in range(next_group["start"] + 24, next_group["start"] + 32):
+                    pixels[j] = (next_r, next_g, next_b)  # Mimic group
 
-                # Apply the changes to all LEDs
+                # Periodically flash red for holiday
+                if step_counter % holiday_interval == 0:
+                    logger.info("Flashing holiday red.")
+                    pixels.fill(COLOR_RED)
+                    pixels.show()
+                    time.sleep(delay * 2)  # Hold the red flash briefly
+
+                # Apply the fade changes to the strip
                 pixels.show()
-
-                # Delay between steps
                 time.sleep(delay)
+
+                step_counter += 1
 
 
 def fade_leds(daily_schedule, steps=50, interval=0.05):
     """Fade LEDs for a schedule using the cycling fade_groups method."""
-    fade_groups_cycling(daily_schedule, steps=steps, delay=interval)
+    fade_groups_cycling_with_holiday(daily_schedule, steps=steps, delay=interval)
 
 
 def update_leds_today():
@@ -114,7 +134,7 @@ def update_leds_today():
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
 
-    upcoming_collections = []  # Store collection types for the week
+    upcoming_collection = None  # Store the first collection after today and tomorrow
     today_or_tomorrow_handled = False  # Flag to check if today/tomorrow was handled
 
     # Iterate through the schedule
@@ -136,25 +156,35 @@ def update_leds_today():
 
             # Check for tomorrow's collections
             elif date_obj == tomorrow and len(daily_schedule["collections"]):
-                logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for tomorrow
+                if "holiday" in daily_schedule["collections"] and "garbage" in daily_schedule["collections"]:
+                    logger.info(f"Holiday tomorrow with garbage pickup detected on {date_obj}. Fading with holiday integration.")
+                    fade_groups_cycling_with_holiday(daily_schedule, steps=100, delay=0.02)  # Fade with holiday red
+                else:
+                    logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
+                    fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for tomorrow
                 today_or_tomorrow_handled = True
 
-            # Collect all upcoming collections for the week (after today)
-            elif date_obj > today and len(daily_schedule["collections"]):
-                upcoming_collections.extend(daily_schedule["collections"])
+            # Find the first collection after today and tomorrow
+            elif date_obj > tomorrow and len(daily_schedule["collections"]) > 0 and upcoming_collection is None:
+                upcoming_collection = daily_schedule["collections"]
+                logger.info(f"First upcoming collection after tomorrow: {upcoming_collection}")
+                break  # Stop looking once the first collection is found
 
-    # If no today/tomorrow collections were handled, show solid lights for the week's upcoming collections
-    if not today_or_tomorrow_handled and upcoming_collections:
-        logger.info(f"Upcoming collections this week: {set(upcoming_collections)}")
+        if upcoming_collection:
+            break  # Exit the outer loop if we've found the first collection
+
+    # If no today/tomorrow collections were handled, show the first upcoming collection
+    if not today_or_tomorrow_handled and upcoming_collection:
+        logger.info(f"Setting LEDs for the first upcoming collection: {upcoming_collection}")
         set_leds(
-            "garbage" in upcoming_collections,
-            "organics" in upcoming_collections,
-            "recycling" in upcoming_collections,
+            "garbage" in upcoming_collection,
+            "organics" in upcoming_collection,
+            "recycling" in upcoming_collection,
         )
     elif not today_or_tomorrow_handled:
         # No collections at all for the week
         logger.info("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
+
 
 # Ensure LEDs are turned off when the program exits
 def turn_off_leds():
