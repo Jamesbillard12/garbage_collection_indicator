@@ -58,7 +58,7 @@ def set_holiday_lights():
     pixels.show()
 
 
-def fade_to_color(collections, steps=50, interval=0.05):
+def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05):
     """Start at white, fade each group to its collection color, then fade all back to white."""
     logger.info(f"Starting at white, fading LEDs to collection colors, and cycling back to white.")
 
@@ -76,7 +76,7 @@ def fade_to_color(collections, steps=50, interval=0.05):
 
     while True:  # Infinite cycle
         # Step 1: Start with all LEDs set to white
-        pixels.fill(COLOR_WHITE)
+        pixels.fill(BASE_COLOR)
         pixels.show()
         time.sleep(1)  # Pause at white
 
@@ -89,9 +89,9 @@ def fade_to_color(collections, steps=50, interval=0.05):
                 for group_start in pair["groups"]:
                     for j in range(group_start, group_start + 8):
                         # Calculate the blended color
-                        r = int(COLOR_WHITE[0] * fade_out_ratio + pair["color"][0] * fade_in_ratio)
-                        g = int(COLOR_WHITE[1] * fade_out_ratio + pair["color"][1] * fade_in_ratio)
-                        b = int(COLOR_WHITE[2] * fade_out_ratio + pair["color"][2] * fade_in_ratio)
+                        r = int(BASE_COLOR[0] * fade_out_ratio + pair["color"][0] * fade_in_ratio)
+                        g = int(BASE_COLOR[1] * fade_out_ratio + pair["color"][1] * fade_in_ratio)
+                        b = int(BASE_COLOR[2] * fade_out_ratio + pair["color"][2] * fade_in_ratio)
                         pixels[j] = (r, g, b)
 
                 # Apply changes to the strip
@@ -107,9 +107,9 @@ def fade_to_color(collections, steps=50, interval=0.05):
                 for group_start in pair["groups"]:
                     for j in range(group_start, group_start + 8):
                         # Calculate the blended color
-                        r = int(pair["color"][0] * fade_out_ratio + COLOR_WHITE[0] * fade_in_ratio)
-                        g = int(pair["color"][1] * fade_out_ratio + COLOR_WHITE[1] * fade_in_ratio)
-                        b = int(pair["color"][2] * fade_out_ratio + COLOR_WHITE[2] * fade_in_ratio)
+                        r = int(pair["color"][0] * fade_out_ratio + BASE_COLOR[0] * fade_in_ratio)
+                        g = int(pair["color"][1] * fade_out_ratio + BASE_COLOR[1] * fade_in_ratio)
+                        b = int(pair["color"][2] * fade_out_ratio + BASE_COLOR[2] * fade_in_ratio)
                         pixels[j] = (r, g, b)
 
             # Apply changes to the strip
