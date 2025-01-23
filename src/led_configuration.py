@@ -38,21 +38,24 @@ def turn_off_leds():
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
 
-def pulsate_white(steps=50, interval=0.05):
+def pulsate_white(steps=50, interval=0.05, stop_event=None):
     """
-    Make the LEDs pulsate white with a smooth breathing effect.
+    Make the LEDs pulsate white with a smooth breathing effect, stopping when the stop_event is set.
 
     Args:
         steps (int): The number of steps for the fade-in and fade-out. Default is 50.
         interval (float): The time (in seconds) between each brightness step. Default is 0.05.
+        stop_event (threading.Event): Event to signal when to stop the pulsating effect.
     """
     logger.info("Starting pulsating white effect.")
 
     try:
-        while True:  # Infinite loop to keep pulsating
+        while not stop_event.is_set():  # Continue until the stop_event is set
             # Fade in: Gradually increase brightness to white
             for step in range(steps + 1):
-                brightness = step / steps  # Calculate brightness as a ratio (0.0 to 1.0)
+                if stop_event.is_set():
+                    break  # Exit loop if stop_event is set
+                brightness = step / steps
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
@@ -60,13 +63,17 @@ def pulsate_white(steps=50, interval=0.05):
 
             # Fade out: Gradually decrease brightness to off
             for step in range(steps, -1, -1):
-                brightness = step / steps  # Calculate brightness as a ratio (1.0 to 0.0)
+                if stop_event.is_set():
+                    break  # Exit loop if stop_event is set
+                brightness = step / steps
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
-    except KeyboardInterrupt:
-        logger.info("Pulsating white effect interrupted. Turning off LEDs.")
+    except Exception as e:
+        logger.error(f"Pulsating white effect failed: {e}")
+    finally:
+        logger.info("Pulsating white effect stopped.")
         turn_off_leds()
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
