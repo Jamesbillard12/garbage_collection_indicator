@@ -39,9 +39,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
     pixels.show()
 
 
-def fade_groups(daily_schedule, steps=50, delay=0.05):
-    """Fade multiple LED groups with overlapping transitions where one fades in while another fades out."""
-    print(f"Fading LEDs with overlap for: {daily_schedule['collections']}")
+def fade_groups_cycling(daily_schedule, steps=50, delay=0.05):
+    """Cycle fades where one group fades in while the others fade out in a continuous loop."""
+    print(f"Cycling fade for LEDs with overlap for: {daily_schedule['collections']}")
 
     # Determine colors for each group
     garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
@@ -55,38 +55,39 @@ def fade_groups(daily_schedule, steps=50, delay=0.05):
         {"start": 16, "end": 24, "color": recycling_color},
     ]
 
-    # Perform overlapping fades
-    for step in range(steps + 1):
-        fade_in_ratio = step / steps
-        fade_out_ratio = 1 - fade_in_ratio
-
+    # Cycling fade logic
+    while True:  # Infinite cycle
         for i, group in enumerate(groups):
             next_group = groups[(i + 1) % len(groups)]  # Get the next group in the sequence
 
-            # Calculate fade-out values for the current group
-            current_r = int(group["color"][0] * fade_out_ratio)
-            current_g = int(group["color"][1] * fade_out_ratio)
-            current_b = int(group["color"][2] * fade_out_ratio)
-            for j in range(group["start"], group["end"]):
-                pixels[j] = (current_r, current_g, current_b)
+            for step in range(steps + 1):
+                fade_in_ratio = step / steps
+                fade_out_ratio = 1 - fade_in_ratio
 
-            # Calculate fade-in values for the next group
-            next_r = int(next_group["color"][0] * fade_in_ratio)
-            next_g = int(next_group["color"][1] * fade_in_ratio)
-            next_b = int(next_group["color"][2] * fade_in_ratio)
-            for j in range(next_group["start"], next_group["end"]):
-                pixels[j] = (next_r, next_g, next_b)
+                # Fade out current group
+                current_r = int(group["color"][0] * fade_out_ratio)
+                current_g = int(group["color"][1] * fade_out_ratio)
+                current_b = int(group["color"][2] * fade_out_ratio)
+                for j in range(group["start"], group["end"]):
+                    pixels[j] = (current_r, current_g, current_b)
 
-        # Apply the changes to all LEDs
-        pixels.show()
+                # Fade in next group
+                next_r = int(next_group["color"][0] * fade_in_ratio)
+                next_g = int(next_group["color"][1] * fade_in_ratio)
+                next_b = int(next_group["color"][2] * fade_in_ratio)
+                for j in range(next_group["start"], next_group["end"]):
+                    pixels[j] = (next_r, next_g, next_b)
 
-        # Delay between steps
-        time.sleep(delay)
+                # Apply the changes to all LEDs
+                pixels.show()
+
+                # Delay between steps
+                time.sleep(delay)
 
 
 def fade_leds(daily_schedule, steps=50, interval=0.05):
-    """Fade LEDs for a schedule using the overlapping fade_groups method."""
-    fade_groups(daily_schedule, steps=steps, delay=interval)
+    """Fade LEDs for a schedule using the cycling fade_groups method."""
+    fade_groups_cycling(daily_schedule, steps=steps, delay=interval)
 
 
 def update_leds_today():
@@ -112,13 +113,13 @@ def update_leds_today():
                 today_or_tomorrow_handled = True
 
             # Check for tomorrow's collections
-            elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
+            elif date_obj == tomorrow and len(daily_schedule["collections"]):
                 print(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
                 fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for tomorrow
                 today_or_tomorrow_handled = True
 
             # Collect all upcoming collections for the week (after today)
-            elif date_obj > today and len(daily_schedule["collections"]) > 0:
+            elif date_obj > today and len(daily_schedule["collections"]):
                 upcoming_collections.extend(daily_schedule["collections"])
 
     # If no today/tomorrow collections were handled, show solid lights for the week's upcoming collections
