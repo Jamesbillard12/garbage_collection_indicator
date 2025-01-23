@@ -22,6 +22,7 @@ COLOR_GARBAGE = (50, 0, 90)  # Garbage
 COLOR_ORGANIC = (0, 128, 0)  # Compost
 COLOR_RECYCLING = (0, 0, 255)  # Recycling
 COLOR_HOLIDAY = (255, 0, 0)  # Holiday
+COLOR_RED = (255, 0, 0)
 COLOR_NO = (255, 165, 0)
 COLOR_OFF = (0, 0, 0)
 
@@ -195,3 +196,30 @@ def turn_off_leds():
 
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
+
+def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
+    """
+    Make all LEDs blink red a specified number of times and then shut off.
+
+    Args:
+        blink_count (int): The number of times to blink red. Default is 5.
+        blink_interval (float): The time (in seconds) between turning on and off. Default is 0.5 seconds.
+    """
+    logger.info(f"Blinking all LEDs red {blink_count} times, then turning them off.")
+
+    # Blink red
+    for _ in range(blink_count):
+        # Turn all LEDs red
+        pixels.fill(COLOR_RED)
+        pixels.show()
+        time.sleep(blink_interval)
+
+        # Turn all LEDs off
+        pixels.fill(COLOR_OFF)
+        pixels.show()
+        time.sleep(blink_interval)
+
+    # Ensure LEDs are off after blinking
+    logger.info("Turning off all LEDs after blinking.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
