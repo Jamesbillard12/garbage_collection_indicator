@@ -109,23 +109,29 @@ def schedule_daily_run(hour=6, minute=0):
     scheduler_thread = threading.Thread(target=run_at_scheduled_time, daemon=True)
     scheduler_thread.start()
 
+def run_startup_process():
+    """
+    Run the fetch_or_load_and_update_leds function on startup in a separate thread.
+    """
+    startup_thread = threading.Thread(target=fetch_or_load_and_update_leds, args=(True,), daemon=True)
+    startup_thread.start()
+
 if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
     turn_off_leds()
 
-    # Run fetch and update process immediately on startup
-    logger.info("Fetching or loading schedule data on startup...")
-    fetch_or_load_and_update_leds(force_fetch=True)
+    # Run the fetch and update process immediately on startup
+    logger.info("Running startup process...")
+    run_startup_process()
 
     # Schedule the daily run at 6:00 AM
     logger.info("Scheduling daily updates at 6:00 AM.")
     schedule_daily_run(hour=6, minute=0)
 
     # Keep the application running
-    while True:
-        try:
+    try:
+        while True:
             time.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Program interrupted. Exiting...")
-            turn_off_leds()
-            break
+    except KeyboardInterrupt:
+        logger.info("Program interrupted. Exiting...")
+        turn_off_leds()
