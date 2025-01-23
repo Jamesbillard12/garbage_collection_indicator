@@ -25,16 +25,21 @@ def set_leds(garbage_on, organics_on, recycling_on):
     print(f"Setting LEDs: Garbage: {garbage_on}, Organics: {organics_on}, Recycling: {recycling_on}")  # Debugging
 
     # Set colors for each LED
-    pixels[0] = COLOR_PURPLE  # First LED
-    pixels[1] = COLOR_GREEN   # Second LED
-    pixels[2] = COLOR_BLUE   # Third LED
+    pixels[0] = COLOR_PURPLE if garbage_on else COLOR_WHITE  # First LED
+    pixels[1] = COLOR_GREEN if organics_on else COLOR_WHITE  # Second LED
+    pixels[2] = COLOR_BLUE if recycling_on else COLOR_WHITE  # Third LED
 
     # Apply changes to the strip
     pixels.show()
 
 
-def blink_leds(times=3, interval=0.5):
+def blink_leds(daily_schedule, times=3, interval=0.5):
     """Blink LEDs sequentially."""
+    set_leds(
+                "garbage" in daily_schedule["collections"],
+                "organics" in daily_schedule["collections"],
+                "recycling" in daily_schedule["collections"],
+            )
     for _ in range(times):
         for i in range(NUM_LEDS):
             pixels.fill(COLOR_OFF)  # Turn off all LEDs
@@ -70,7 +75,7 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections: {daily_schedule['collections']}")
-                blink_leds()
+                blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
     pixels.fill(COLOR_OFF)
