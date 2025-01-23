@@ -5,7 +5,7 @@ from src.handle_schedule import load_schedule
 from datetime import datetime, timedelta
 
 # LED Strip Configuration
-NUM_LEDS = 3  # Number of LEDs in your strip
+NUM_LEDS = 8  # Number of LEDs in your strip
 PIN = board.D10  # GPIO pin connected to the LED strip
 BRIGHTNESS = 1  # Brightness (0.0 to 1.0)
 
