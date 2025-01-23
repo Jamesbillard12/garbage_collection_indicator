@@ -93,14 +93,14 @@ def fade_leds(daily_schedule, steps=50, interval=0.5):
     recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
 
     # Fade each group sequentially
-    fade_group(COLOR_OFF, garbage_color, 0, 8, steps, interval)
-    fade_group(garbage_color, COLOR_OFF, 0, 8, steps, interval)
+    fade_groups(COLOR_OFF, garbage_color, 0, 8, steps, interval)
+    fade_groups(garbage_color, COLOR_OFF, 0, 8, steps, interval)
 
-    fade_group(COLOR_OFF, organics_color, 8, 16, steps, interval)
-    fade_group(organics_color, COLOR_OFF, 8, 16, steps, interval)
+    fade_groups(COLOR_OFF, organics_color, 8, 16, steps, interval)
+    fade_groups(organics_color, COLOR_OFF, 8, 16, steps, interval)
 
-    fade_group(COLOR_OFF, recycling_color, 16, 24, steps, interval)
-    fade_group(recycling_color, COLOR_OFF, 16, 24, steps, interval)
+    fade_groups(COLOR_OFF, recycling_color, 16, 24, steps, interval)
+    fade_groups(recycling_color, COLOR_OFF, 16, 24, steps, interval)
 
 
 
