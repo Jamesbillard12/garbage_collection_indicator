@@ -59,8 +59,8 @@ def set_holiday_lights():
 
 
 def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5):
-    """Start at white, fade each group to its collection color, hold, then fade all back to the base color."""
-    logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, and cycling back to {BASE_COLOR}.")
+    """Start at white, fade each group to its collection color, then fade all back to the base color."""
+    logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back to {BASE_COLOR}.")
 
     # Determine collection colors
     garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
@@ -80,9 +80,8 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
         pixels.show()
         time.sleep(1)  # Pause at base color
 
-        # Step 2: Sequentially fade each group to its collection color and hold
+        # Step 2: Sequentially fade each group to its collection color
         for pair in paired_groups:
-            # Fade to collection color
             for step in range(steps + 1):
                 fade_in_ratio = step / steps  # Ratio for collection color
                 fade_out_ratio = 1 - fade_in_ratio  # Ratio for base color
@@ -99,10 +98,10 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
                 pixels.show()
                 time.sleep(interval)
 
-            # Hold the collection color for the specified time
-            time.sleep(hold_time)
+        # Step 3: Hold all collection colors for the specified time
+        time.sleep(hold_time)
 
-        # Step 3: Fade all LEDs back to the base color
+        # Step 4: Fade all LEDs back to the base color
         for step in range(steps + 1):
             fade_in_ratio = step / steps  # Ratio for base color
             fade_out_ratio = 1 - fade_in_ratio  # Ratio for collection color
@@ -119,7 +118,6 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
             # Apply changes to the strip
             pixels.show()
             time.sleep(interval)
-
 
 
 def update_leds_today():
