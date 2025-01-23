@@ -40,7 +40,7 @@ def set_leds(garbage_on, organics_on, recycling_on):
 
 
 def fade_groups(daily_schedule, steps=50, delay=0.05):
-    """Fade multiple LED groups with overlapping transitions."""
+    """Fade multiple LED groups with overlapping transitions where one fades in while another fades out."""
     print(f"Fading LEDs with overlap for: {daily_schedule['collections']}")
 
     # Determine colors for each group
@@ -50,30 +50,33 @@ def fade_groups(daily_schedule, steps=50, delay=0.05):
 
     # Define the groups and their colors
     groups = [
-        {"start": 0, "end": 8, "start_color": COLOR_OFF, "end_color": garbage_color},
-        {"start": 8, "end": 16, "start_color": COLOR_OFF, "end_color": organics_color},
-        {"start": 16, "end": 24, "start_color": COLOR_OFF, "end_color": recycling_color},
+        {"start": 0, "end": 8, "color": garbage_color},
+        {"start": 8, "end": 16, "color": organics_color},
+        {"start": 16, "end": 24, "color": recycling_color},
     ]
-
-    # Extract RGB component deltas for each group
-    for group in groups:
-        start_r, start_g, start_b = group["start_color"]
-        end_r, end_g, end_b = group["end_color"]
-        group["step_r"] = (end_r - start_r) / steps
-        group["step_g"] = (end_g - start_g) / steps
-        group["step_b"] = (end_b - start_b) / steps
 
     # Perform overlapping fades
     for step in range(steps + 1):
-        for group in groups:
-            # Calculate current color for this group
-            current_r = int(group["start_color"][0] + step * group["step_r"])
-            current_g = int(group["start_color"][1] + step * group["step_g"])
-            current_b = int(group["start_color"][2] + step * group["step_b"])
+        for i, group in enumerate(groups):
+            next_group = groups[(i + 1) % len(groups)]  # Get the next group in the sequence
 
-            # Update the LEDs in this group
-            for i in range(group["start"], group["end"]):
-                pixels[i] = (current_r, current_g, current_b)
+            # Calculate fade-in and fade-out values
+            fade_out_ratio = (steps - step) / steps
+            fade_in_ratio = step / steps
+
+            # Fade out current group
+            current_r = int(group["color"][0] * fade_out_ratio)
+            current_g = int(group["color"][1] * fade_out_ratio)
+            current_b = int(group["color"][2] * fade_out_ratio)
+            for j in range(group["start"], group["end"]):
+                pixels[j] = (current_r, current_g, current_b)
+
+            # Fade in next group
+            next_r = int(next_group["color"][0] * fade_in_ratio)
+            next_g = int(next_group["color"][1] * fade_in_ratio)
+            next_b = int(next_group["color"][2] * fade_in_ratio)
+            for j in range(next_group["start"], next_group["end"]):
+                pixels[j] = (next_r, next_g, next_b)
 
         # Apply the changes to all LEDs
         pixels.show()
