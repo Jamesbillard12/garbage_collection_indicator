@@ -1,0 +1,158 @@
+{
+    "2024-12-30": [
+        {
+            "date": "2025-01-01",
+            "collections": [
+                "holiday"
+            ]
+        },
+        {
+            "date": "2025-01-02",
+            "collections": [
+                "garbage",
+                "organics",
+                "recycling"
+            ]
+        },
+        {
+            "date": "2025-01-03",
+            "collections": []
+        },
+        {
+            "date": "2025-01-04",
+            "collections": []
+        },
+        {
+            "date": "2025-01-05",
+            "collections": []
+        }
+    ],
+    "2025-01-06": [
+        {
+            "date": "2025-01-06",
+            "collections": []
+        },
+        {
+            "date": "2025-01-07",
+            "collections": []
+        },
+        {
+            "date": "2025-01-08",
+            "collections": [
+                "garbage",
+                "organics"
+            ]
+        },
+        {
+            "date": "2025-01-09",
+            "collections": []
+        },
+        {
+            "date": "2025-01-10",
+            "collections": []
+        },
+        {
+            "date": "2025-01-11",
+            "collections": []
+        },
+        {
+            "date": "2025-01-12",
+            "collections": []
+        }
+    ],
+    "2025-01-13": [
+        {
+            "date": "2025-01-13",
+            "collections": []
+        },
+        {
+            "date": "2025-01-14",
+            "collections": []
+        },
+        {
+            "date": "2025-01-15",
+            "collections": [
+                "garbage",
+                "organics",
+                "recycling"
+            ]
+        },
+        {
+            "date": "2025-01-16",
+            "collections": []
+        },
+        {
+            "date": "2025-01-17",
+            "collections": []
+        },
+        {
+            "date": "2025-01-18",
+            "collections": []
+        },
+        {
+            "date": "2025-01-19",
+            "collections": []
+        }
+    ],
+    "2025-01-20": [
+        {
+            "date": "2025-01-20",
+            "collections": [
+                "holiday"
+            ]
+        },
+        {
+            "date": "2025-01-21",
+            "collections": []
+        },
+        {
+            "date": "2025-01-22",
+            "collections": []
+        },
+        {
+            "date": "2025-01-23",
+            "collections": [
+                "garbage",
+                "organics"
+            ]
+        },
+        {
+            "date": "2025-01-24",
+            "collections": []
+        },
+        {
+            "date": "2025-01-25",
+            "collections": []
+        },
+        {
+            "date": "2025-01-26",
+            "collections": []
+        }
+    ],
+    "2025-01-27": [
+        {
+            "date": "2025-01-27",
+            "collections": []
+        },
+        {
+            "date": "2025-01-28",
+            "collections": []
+        },
+        {
+            "date": "2025-01-29",
+            "collections": [
+                "garbage",
+                "organics",
+                "recycling"
+            ]
+        },
+        {
+            "date": "2025-01-30",
+            "collections": []
+        },
+        {
+            "date": "2025-01-31",
+            "collections": []
+        }
+    ]
+}
