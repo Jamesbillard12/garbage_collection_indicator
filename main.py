@@ -9,19 +9,19 @@ import threading
 logger = logging.getLogger(__name__)
 
 def run_process():
-    print('Running process')
+    logger.info('Running process')
     today = datetime.now().day
     last_day_of_month = (datetime.now() + timedelta(days=31)).replace(day=1) - timedelta(days=1)
 
     if today == 1 or today == last_day_of_month.day:
         # Run scraping at the beginning and end of the month
-        print('Scraping recology site for collection dates')
+        logger.info('Scraping recology site for collection dates')
         collections = scrape_with_playwright()
         save_schedule(collections)
         update_leds_today()
     else:
         # Update LEDs daily
-        print('Running LEDs')
+        logger.info('Running LEDs')
         update_leds_today()
 
 def schedule_daily_run(hour=6, minute=0):
@@ -37,7 +37,7 @@ def schedule_daily_run(hour=6, minute=0):
 
             # Calculate the wait time in seconds
             wait_time = (scheduled_time - now).total_seconds()
-            print(f"Next run scheduled at: {scheduled_time}. Waiting for {wait_time} seconds.")
+            logger.info(f"Next run scheduled at: {scheduled_time}. Waiting for {wait_time} seconds.")
 
             # Wait until the scheduled time
             time.sleep(wait_time)
@@ -50,7 +50,7 @@ def schedule_daily_run(hour=6, minute=0):
     scheduler_thread.start()
 
 if __name__ == '__main__':
-    print("Starting LED scheduling program...")
+    logger.info("Starting LED scheduling program...")
 
     # Run the process immediately once on start
     run_process()
