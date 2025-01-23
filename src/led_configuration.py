@@ -29,7 +29,15 @@ COLOR_OFF = (0, 0, 0)
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
+# Ensure LEDs are turned off when the program exits
+def turn_off_leds():
+    logger.info("Turning off LEDs.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
+
+
 def pulsate_white(steps=50, interval=0.05):
+    turn_off_leds()
     """
     Make the LEDs pulsate white with a smooth breathing effect.
 
@@ -59,6 +67,7 @@ def pulsate_white(steps=50, interval=0.05):
 
 # Helper Functions
 def set_leds(garbage_on, organics_on, recycling_on):
+    turn_off_leds()
     """Set LED colors based on collection status for groups of 8 LEDs."""
     logger.info(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")
 
@@ -81,6 +90,7 @@ def set_leds(garbage_on, organics_on, recycling_on):
 
 
 def set_holiday_lights():
+    turn_off_leds()
     """Set all LEDs to solid red for a holiday."""
     logger.info("Setting LEDs to solid red for holiday.")
     pixels.fill(COLOR_HOLIDAY)
@@ -88,6 +98,7 @@ def set_holiday_lights():
 
 
 def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5):
+    turn_off_leds()
     """Start at white, fade each group to its collection color, then fade all back to the base color."""
     logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back to {BASE_COLOR}.")
 
@@ -147,12 +158,6 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
             # Apply changes to the strip
             pixels.show()
             time.sleep(interval)
-
-# Ensure LEDs are turned off when the program exits
-def turn_off_leds():
-    logger.info("Turning off LEDs.")
-    pixels.fill(COLOR_OFF)
-    pixels.show()
 
 
 def update_leds_today():
@@ -229,6 +234,7 @@ def update_leds_today():
 atexit.register(turn_off_leds)
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
+    turn_off_leds()
     """
     Make all LEDs blink red a specified number of times and then shut off.
 
