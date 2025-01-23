@@ -151,17 +151,19 @@ def update_leds_today():
             # Check for today's collections
             if date_obj == today and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for today
+                fade_leds(daily_schedule, steps=100, interval=0.02)  # Normal fading for today
                 today_or_tomorrow_handled = True
 
             # Check for tomorrow's collections
             elif date_obj == tomorrow and len(daily_schedule["collections"]):
                 if "holiday" in daily_schedule["collections"] and "garbage" in daily_schedule["collections"]:
-                    logger.info(f"Holiday tomorrow with garbage pickup detected on {date_obj}. Fading with holiday integration.")
-                    fade_groups_cycling_with_holiday(daily_schedule, steps=100, delay=0.02)  # Fade with holiday red
+                    # Special case: Holiday today and garbage pickup tomorrow
+                    logger.info(f"Holiday today with garbage pickup tomorrow. Fading with holiday integration.")
+                    fade_groups_cycling_with_holiday(daily_schedule, steps=100, delay=0.02)  # Fade with red flashes
                 else:
+                    # Normal fading for tomorrow's collections
                     logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                    fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for tomorrow
+                    fade_leds(daily_schedule, steps=100, interval=0.02)
                 today_or_tomorrow_handled = True
 
             # Find the first collection after today and tomorrow
@@ -184,6 +186,7 @@ def update_leds_today():
     elif not today_or_tomorrow_handled:
         # No collections at all for the week
         logger.info("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
+
 
 
 # Ensure LEDs are turned off when the program exits
