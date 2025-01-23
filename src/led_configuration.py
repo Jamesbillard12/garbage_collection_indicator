@@ -92,7 +92,7 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections: {daily_schedule['collections']}")
-                blink_leds(daily_schedule)
+                # blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
     # pixels.fill(COLOR_OFF)
