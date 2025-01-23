@@ -40,21 +40,43 @@ def set_leds(garbage_on, organics_on, recycling_on):
 
 
 def blink_leds(daily_schedule, times=3, interval=0.5):
-    """Blink LEDs sequentially."""
-    set_leds(
-                "garbage" in daily_schedule["collections"],
-                "organics" in daily_schedule["collections"],
-                "recycling" in daily_schedule["collections"],
-            )
+    """Blink each group of LEDs sequentially."""
+    print(f"Blinking LEDs: {daily_schedule['collections']}")
+
+    # Group configurations
+    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
+    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
+    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
+
     for _ in range(times):
-        for i in range(NUM_LEDS):
-            pixels.fill(COLOR_OFF)  # Turn off all LEDs
-            pixels[i] = pixels[i]  # Light up only the current LED
-            pixels.show()
-            time.sleep(interval)
-        pixels.fill(COLOR_OFF)
+        # Turn on and off each group sequentially
+        # Garbage group (LEDs 0–7)
+        for i in range(8):
+            pixels[i] = garbage_color
         pixels.show()
         time.sleep(interval)
+        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        pixels.show()
+
+        # Organics group (LEDs 8–15)
+        for i in range(8, 16):
+            pixels[i] = organics_color
+        pixels.show()
+        time.sleep(interval)
+        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        pixels.show()
+
+        # Recycling group (LEDs 16–23)
+        for i in range(16, 24):
+            pixels[i] = recycling_color
+        pixels.show()
+        time.sleep(interval)
+        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        pixels.show()
+
+        # Add a pause between cycles
+        time.sleep(interval)
+
 
 def update_leds_today():
     """Update LEDs based on today's and tomorrow's schedule."""
@@ -81,7 +103,7 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections: {daily_schedule['collections']}")
-                # blink_leds(daily_schedule)
+                blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
     # pixels.fill(COLOR_OFF)
