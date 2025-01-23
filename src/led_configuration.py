@@ -58,9 +58,9 @@ def set_holiday_lights():
     pixels.show()
 
 
-def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05):
-    """Start at white, fade each group to its collection color, then fade all back to white."""
-    logger.info(f"Starting at white, fading LEDs to collection colors, and cycling back to white.")
+def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5):
+    """Start at white, fade each group to its collection color, hold, then fade all back to the base color."""
+    logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, and cycling back to {BASE_COLOR}.")
 
     # Determine collection colors
     garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
@@ -75,16 +75,17 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05):
     ]
 
     while True:  # Infinite cycle
-        # Step 1: Start with all LEDs set to white
+        # Step 1: Start with all LEDs set to the base color
         pixels.fill(BASE_COLOR)
         pixels.show()
-        time.sleep(1)  # Pause at white
+        time.sleep(1)  # Pause at base color
 
-        # Step 2: Sequentially fade each group to its collection color
+        # Step 2: Sequentially fade each group to its collection color and hold
         for pair in paired_groups:
+            # Fade to collection color
             for step in range(steps + 1):
                 fade_in_ratio = step / steps  # Ratio for collection color
-                fade_out_ratio = 1 - fade_in_ratio  # Ratio for white
+                fade_out_ratio = 1 - fade_in_ratio  # Ratio for base color
 
                 for group_start in pair["groups"]:
                     for j in range(group_start, group_start + 8):
@@ -98,9 +99,12 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05):
                 pixels.show()
                 time.sleep(interval)
 
-        # Step 3: Fade all LEDs back to white
+            # Hold the collection color for the specified time
+            time.sleep(hold_time)
+
+        # Step 3: Fade all LEDs back to the base color
         for step in range(steps + 1):
-            fade_in_ratio = step / steps  # Ratio for white
+            fade_in_ratio = step / steps  # Ratio for base color
             fade_out_ratio = 1 - fade_in_ratio  # Ratio for collection color
 
             for pair in paired_groups:
@@ -115,6 +119,7 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05):
             # Apply changes to the strip
             pixels.show()
             time.sleep(interval)
+
 
 
 def update_leds_today():
