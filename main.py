@@ -5,13 +5,24 @@ from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
 from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white
 import threading
+import atexit
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set to DEBUG for more detailed logs
+    level=logging.DEBUG,  # Set to DEBUG for detailed logs
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Ensure LEDs are turned off and resources are cleaned up on exit
+def cleanup_resources():
+    try:
+        logger.info("Cleaning up resources on exit...")
+        turn_off_leds()
+    except Exception as e:
+        logger.error(f"Failed to clean up resources: {e}")
+
+atexit.register(cleanup_resources)
 
 def is_beginning_or_end_of_month():
     """Check if today is the beginning or end of the month."""
@@ -134,4 +145,4 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Program interrupted. Exiting...")
-        turn_off_leds()
+        cleanup_resources()
