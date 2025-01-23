@@ -22,7 +22,7 @@ pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=Fals
 # Helper Functions
 def set_leds(garbage_on, organics_on, recycling_on):
     """Set LED colors based on collection status for groups of 8 LEDs."""
-    print(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")  # Debugging
+    print(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")
 
     # Group configurations
     garbage_color = COLOR_PURPLE if garbage_on else COLOR_WHITE  # Garbage group
@@ -82,27 +82,9 @@ def fade_groups(daily_schedule, steps=50, delay=0.05):
         time.sleep(delay)
 
 
-
-def fade_leds(daily_schedule, steps=50, interval=0.5):
-    """Fade each group of LEDs sequentially."""
-    print(f"Fading LEDs for: {daily_schedule['collections']}")
-
-    # Determine colors for each group
-    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
-    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
-    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
-
-    # Fade each group sequentially
-    fade_groups(COLOR_OFF, garbage_color, 0, 8, steps, interval)
-    fade_groups(garbage_color, COLOR_OFF, 0, 8, steps, interval)
-
-    fade_groups(COLOR_OFF, organics_color, 8, 16, steps, interval)
-    fade_groups(organics_color, COLOR_OFF, 8, 16, steps, interval)
-
-    fade_groups(COLOR_OFF, recycling_color, 16, 24, steps, interval)
-    fade_groups(recycling_color, COLOR_OFF, 16, 24, steps, interval)
-
-
+def fade_leds(daily_schedule, steps=50, interval=0.05):
+    """Fade LEDs for a schedule using the overlapping fade_groups method."""
+    fade_groups(daily_schedule, steps=steps, delay=interval)
 
 
 def update_leds_today():
