@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 def run_process():
-    print('running process')
+    logger.info('running process')
     today = datetime.now().day
     last_day_of_month = (datetime.now() + timedelta(days=31)).replace(day=1) - timedelta(days=1)
 
