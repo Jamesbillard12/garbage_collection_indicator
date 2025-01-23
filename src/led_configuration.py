@@ -39,45 +39,62 @@ def set_leds(garbage_on, organics_on, recycling_on):
     pixels.show()
 
 
-def blink_leds(daily_schedule, times=3, interval=0.5):
-    """Blink each group of LEDs sequentially."""
-    print(f"Blinking LEDs for: {daily_schedule['collections']}")
+def fade_group(start_color, end_color, group_start, group_end, steps=50, delay=0.05):
+    """
+    Fades a specific group of LEDs from one color to another.
 
-    # Determine the colors for each group
-    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_OFF
-    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_OFF
-    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_OFF
+    Args:
+        start_color (tuple): The starting RGB color (R, G, B).
+        end_color (tuple): The ending RGB color (R, G, B).
+        group_start (int): Start index of the LED group.
+        group_end (int): End index (exclusive) of the LED group.
+        steps (int): Number of steps for the transition.
+        delay (float): Delay in seconds between each step.
+    """
+    # Extract RGB components
+    start_r, start_g, start_b = start_color
+    end_r, end_g, end_b = end_color
 
-    for _ in range(times):
-        # Blink the garbage group (LEDs 0–7)
-        for i in range(8):
-            pixels[i] = garbage_color
-        pixels.show()
-        time.sleep(interval)
-        for i in range(8):
-            pixels[i] = COLOR_OFF  # Turn off garbage group
-        pixels.show()
+    # Calculate step size for each color component
+    step_r = (end_r - start_r) / steps
+    step_g = (end_g - start_g) / steps
+    step_b = (end_b - start_b) / steps
 
-        # Blink the organics group (LEDs 8–15)
-        for i in range(8, 16):
-            pixels[i] = organics_color
-        pixels.show()
-        time.sleep(interval)
-        for i in range(8, 16):
-            pixels[i] = COLOR_OFF  # Turn off organics group
-        pixels.show()
+    # Fade over the specified number of steps
+    for step in range(steps + 1):
+        # Calculate current color
+        current_r = int(start_r + step * step_r)
+        current_g = int(start_g + step * step_g)
+        current_b = int(start_b + step * step_b)
 
-        # Blink the recycling group (LEDs 16–23)
-        for i in range(16, 24):
-            pixels[i] = recycling_color
-        pixels.show()
-        time.sleep(interval)
-        for i in range(16, 24):
-            pixels[i] = COLOR_OFF  # Turn off recycling group
+        # Update the specified group of LEDs
+        for i in range(group_start, group_end):
+            pixels[i] = (current_r, current_g, current_b)
         pixels.show()
 
-        # Optional: Short pause between full cycles
-        time.sleep(interval)
+        # Delay between steps
+        time.sleep(delay)
+
+
+def fade_leds(daily_schedule, steps=50, interval=0.5):
+    """Fade each group of LEDs sequentially."""
+    print(f"Fading LEDs for: {daily_schedule['collections']}")
+
+    # Determine colors for each group
+    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
+    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
+    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
+
+    # Fade each group sequentially
+    fade_group(COLOR_OFF, garbage_color, 0, 8, steps, interval)
+    fade_group(garbage_color, COLOR_OFF, 0, 8, steps, interval)
+
+    fade_group(COLOR_OFF, organics_color, 8, 16, steps, interval)
+    fade_group(organics_color, COLOR_OFF, 8, 16, steps, interval)
+
+    fade_group(COLOR_OFF, recycling_color, 16, 24, steps, interval)
+    fade_group(recycling_color, COLOR_OFF, 16, 24, steps, interval)
+
 
 
 
@@ -106,7 +123,8 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                blink_leds(daily_schedule)
+                fade_leds(daily_schedule, steps=100, interval=0.02)
+
 
     # Turn off LEDs if no match for today or tomorrow
     pixels.fill(COLOR_OFF)
