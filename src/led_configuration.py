@@ -109,5 +109,5 @@ def update_leds_today():
                 blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
-    # pixels.fill(COLOR_OFF)
-    # pixels.show()
+    pixels.fill(COLOR_OFF)
+    pixels.show()
