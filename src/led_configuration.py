@@ -96,7 +96,7 @@ def update_leds_today():
 
             if date_obj == today:
                 # Set LEDs solid for today's collections
-                print(f"Today's collections: {daily_schedule['collections']}")
+                print(f"Today's collections ({daily_schedule["date"]}): {daily_schedule['collections']}")
                 set_leds(
                     "garbage" in daily_schedule["collections"],
                     "organics" in daily_schedule["collections"],
@@ -105,7 +105,7 @@ def update_leds_today():
 
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
-                print(f"Tomorrow's collections: {daily_schedule['collections']}")
+                print(f"Tomorrow's collections ({daily_schedule["date"]}): {daily_schedule['collections']}")
                 set_leds(
                     "garbage" in daily_schedule["collections"],
                     "organics" in daily_schedule["collections"],
