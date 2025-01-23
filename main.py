@@ -8,7 +8,7 @@ import threading
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Set to DEBUG for more detailed logs
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -22,10 +22,12 @@ def is_beginning_or_end_of_month():
 
 def has_valid_collections(collections):
     """Check if the collections data contains any non-empty collections."""
+    logger.debug("Validating collections...")
     for week_key, daily_schedules in collections.items():
         for daily_schedule in daily_schedules:
             if len(daily_schedule.get("collections", [])) > 0:
-                return True  # Found valid collections
+                logger.debug(f"Valid collection found: {daily_schedule['collections']}")
+                return True
     return False  # No valid collections found
 
 def fetch_or_load_and_update_leds(force_fetch=False):
@@ -40,7 +42,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05, stop_event), daemon=True)
 
     try:
-        # Start pulsating white in a separate thread
+        logger.info("Starting pulsating white effect while processing data...")
         pulsate_thread.start()
 
         # Decide whether to fetch or load based on conditions
@@ -78,8 +80,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
             stop_event.set()
         if pulsate_thread.is_alive():
             pulsate_thread.join()  # Ensure the thread stops before proceeding
-
-
+        logger.info("Processing complete.")
 
 def schedule_daily_run(hour=6, minute=0):
     """
@@ -96,7 +97,7 @@ def schedule_daily_run(hour=6, minute=0):
 
             # Calculate the wait time in seconds
             wait_time = (scheduled_time - now).total_seconds()
-            logger.info(f"Next run scheduled at: {scheduled_time}. Waiting for {wait_time} seconds.")
+            logger.info(f"Next run scheduled at: {scheduled_time}. Waiting for {wait_time:.2f} seconds.")
 
             # Wait until the scheduled time
             time.sleep(wait_time)
@@ -113,11 +114,18 @@ if __name__ == "__main__":
     turn_off_leds()
 
     # Run fetch and update process immediately on startup
+    logger.info("Fetching or loading schedule data on startup...")
     fetch_or_load_and_update_leds(force_fetch=True)
 
     # Schedule the daily run at 6:00 AM
+    logger.info("Scheduling daily updates at 6:00 AM.")
     schedule_daily_run(hour=6, minute=0)
 
     # Keep the application running
     while True:
-        time.sleep(1)
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("Program interrupted. Exiting...")
+            turn_off_leds()
+            break
