@@ -25,9 +25,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
     print(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")  # Debugging
 
     # Group configurations
-    garbage_color = COLOR_PURPLE if garbage_on else COLOR_OFF  # Garbage group
-    organics_color = COLOR_GREEN if organics_on else COLOR_OFF  # Organics group
-    recycling_color = COLOR_BLUE if recycling_on else COLOR_OFF  # Recycling group
+    garbage_color = COLOR_PURPLE if garbage_on else COLOR_WHITE  # Garbage group
+    organics_color = COLOR_GREEN if organics_on else COLOR_WHITE  # Organics group
+    recycling_color = COLOR_BLUE if recycling_on else COLOR_WHITE  # Recycling group
 
     # Assign colors to groups of 8
     for i in range(8):
