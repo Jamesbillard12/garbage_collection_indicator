@@ -62,9 +62,9 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
     logger.info(f"Cycling and fading LEDs to {target_color} for collections: {collections}")
 
     # Determine collection colors
-    garbage_color = COLOR_PURPLE if "garbage" in collections else COLOR_WHITE
-    organics_color = COLOR_GREEN if "organics" in collections else COLOR_WHITE
-    recycling_color = COLOR_BLUE if "recycling" in collections else COLOR_WHITE
+    garbage_color = COLOR_PURPLE if "garbage" in collections else COLOR_OFF
+    organics_color = COLOR_GREEN if "organics" in collections else COLOR_OFF
+    recycling_color = COLOR_BLUE if "recycling" in collections else COLOR_OFF
 
     # Define the paired groups and their colors
     paired_groups = [
