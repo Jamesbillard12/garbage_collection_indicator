@@ -19,9 +19,9 @@ BRIGHTNESS = 1  # Brightness (0.0 to 1.0)
 
 # Colors
 COLOR_WHITE = (255, 255, 255)
-COLOR_PURPLE = (54, 1, 63)  # Garbage
-COLOR_GREEN = (1, 50, 32)  # Organics
-COLOR_BLUE = (44, 65, 130)  # Recycling
+COLOR_PURPLE = (75, 0, 130)  # garbage
+COLOR_GREEN = (0, 128, 0)  # Compost
+COLOR_BLUE = (0, 0, 255)  # Recycling
 COLOR_RED = (255, 0, 0)  # Holiday
 COLOR_OFF = (0, 0, 0)
 
