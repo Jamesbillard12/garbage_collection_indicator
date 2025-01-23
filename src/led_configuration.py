@@ -42,6 +42,7 @@ def blink_leds(times=3, interval=0.5):
 def update_leds_today():
     """Update LEDs based on today's and tomorrow's schedule."""
     schedule = load_schedule()
+    print(schedule)
 
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
