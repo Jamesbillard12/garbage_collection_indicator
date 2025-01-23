@@ -34,11 +34,15 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     - force_fetch is True.
+    Pulsates white while processing.
     """
-    pulsate_thread = None
+    stop_event = threading.Event()
+    pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05, stop_event), daemon=True)
+
     try:
-        pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05), daemon=True)
+        # Start pulsating white in a separate thread
         pulsate_thread.start()
+
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
             logger.info("Fetching new collection data...")
@@ -68,10 +72,13 @@ def fetch_or_load_and_update_leds(force_fetch=False):
         logger.error(f"Failed to load, fetch, or update LEDs: {e}")
         blink_red_and_turn_off()  # Turn off LEDs on failure
     finally:
-        # Ensure pulsating stops once fetching/loading is complete
-        if pulsate_thread and pulsate_thread.is_alive():
+        # Signal the stop event and wait for the pulsating thread to finish
+        if stop_event:
             logger.info("Stopping pulsating white effect.")
-            turn_off_leds()  # Ensure LEDs turn off after pulsating
+            stop_event.set()
+        if pulsate_thread.is_alive():
+            pulsate_thread.join()  # Ensure the thread stops before proceeding
+
 
 
 def schedule_daily_run(hour=6, minute=0):
