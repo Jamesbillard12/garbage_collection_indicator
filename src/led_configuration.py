@@ -58,7 +58,7 @@ def set_holiday_lights():
 
 
 def fade_to_color(collections, target_color, steps=50, interval=0.05):
-    """Cycle through collection colors, with each paired group fading in and out to the target color."""
+    """Turn all LEDs to their collection colors, then cycle through collection colors, fading each to the target color."""
     logger.info(f"Cycling and fading LEDs to {target_color} for collections: {collections}")
 
     # Determine collection colors
@@ -73,9 +73,18 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
         {"groups": [16, 24], "color": recycling_color},  # Group 3 and 4
     ]
 
+    # Step 1: Turn all LEDs to their collection colors
+    for pair in paired_groups:
+        for group_start in pair["groups"]:
+            for j in range(group_start, group_start + 8):
+                pixels[j] = pair["color"]
+    pixels.show()
+    time.sleep(1)  # Hold collection colors for 1 second
+
+    # Step 2: Start fading cycles
     while True:  # Infinite cycle
         for pair in paired_groups:
-            # Perform fade for the current paired groups
+            # Perform fade to the target color for the current group
             for step in range(steps + 1):
                 fade_in_ratio = step / steps  # Ratio for target color
                 fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
@@ -108,6 +117,7 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
                 # Apply changes to the strip
                 pixels.show()
                 time.sleep(interval)
+
 
 
 
