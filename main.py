@@ -51,6 +51,11 @@ def schedule_daily_run(hour=6, minute=0):
 
 if __name__ == '__main__':
     print("Starting LED scheduling program...")
+
+    # Run the process immediately once on start
+    run_process()
+
+    # Schedule the daily run
     schedule_daily_run(hour=6, minute=0)  # Schedule to run at 6:00 AM daily
 
     # Keep the program running
