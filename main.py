@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off
+from src.led_configuration import update_leds_today, blink_red_and_turn_off, pulsate_white
 import threading
 
 # Configure logging
@@ -33,6 +33,7 @@ def fetch_and_update_leds():
     Fetch the collection data, save it, and update the LEDs.
     Re-fetch if no valid data is found.
     """
+    pulsate_white()
     try:
         logger.info("Fetching collection data on application start...")
         collections = scrape_with_playwright()
