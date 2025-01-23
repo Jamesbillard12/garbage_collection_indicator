@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white, pixels
+from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white
 import threading
 import atexit
 
@@ -19,7 +19,6 @@ def cleanup_resources():
     try:
         logger.info("Cleaning up resources on exit...")
         turn_off_leds()
-        pixels.deinit()
     except Exception as e:
         logger.error(f"Failed to clean up resources: {e}")
 
@@ -50,12 +49,12 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     - force_fetch is True.
     Pulsates white while processing.
     """
-    stop_event = threading.Event()
-    pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05, stop_event), daemon=True)
+    # stop_event = threading.Event()
+    # pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05, stop_event), daemon=True)
 
     try:
         logger.info("Starting pulsating white effect while processing data...")
-        pulsate_thread.start()
+        # pulsate_thread.start()
 
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
@@ -85,14 +84,14 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     except Exception as e:
         logger.error(f"Failed to load, fetch, or update LEDs: {e}")
         blink_red_and_turn_off()  # Turn off LEDs on failure
-    finally:
-        # Signal the stop event and wait for the pulsating thread to finish
-        if stop_event:
-            logger.info("Stopping pulsating white effect.")
-            stop_event.set()
-        if pulsate_thread.is_alive():
-            pulsate_thread.join()  # Ensure the thread stops before proceeding
-        logger.info("Processing complete.")
+    # finally:
+    #     # Signal the stop event and wait for the pulsating thread to finish
+    #     if stop_event:
+    #         logger.info("Stopping pulsating white effect.")
+    #         stop_event.set()
+    #     if pulsate_thread.is_alive():
+    #         pulsate_thread.join()  # Ensure the thread stops before proceeding
+    #     logger.info("Processing complete.")
 
 def schedule_daily_run(hour=6, minute=0):
     """
