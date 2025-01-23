@@ -116,7 +116,7 @@ def update_leds_today():
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
             # Check for holidays
-            if "holiday" in daily_schedule["collections"]:
+            if "holiday" in daily_schedule["collections"] and date_obj == today:
                 print(f"Holiday detected on {date_obj}. Turning lights solid red.")
                 set_holiday_lights()
                 return
