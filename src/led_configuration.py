@@ -34,6 +34,7 @@ def turn_off_leds():
     logger.info("Turning off LEDs.")
     pixels.fill(COLOR_OFF)
     pixels.show()
+    pixels.deinit()
 
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
