@@ -58,9 +58,9 @@ def set_holiday_lights():
     pixels.show()
 
 
-def fade_to_color(collections, target_color, steps=50, interval=0.05):
-    """Sequentially turn on paired groups, then fade all LEDs to the target color."""
-    logger.info(f"Sequentially turning on and fading LEDs to {target_color} for collections: {collections}")
+def fade_to_color(collections, steps=50, interval=0.05):
+    """Start at white, fade each group to its collection color, then fade all back to white."""
+    logger.info(f"Starting at white, fading LEDs to collection colors, and cycling back to white.")
 
     # Determine collection colors
     garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
@@ -74,48 +74,42 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
         {"groups": [16, 24], "color": recycling_color},  # Group 3 and 4
     ]
 
-    # Step 1: Sequentially turn on paired groups
-    for pair in paired_groups:
-        for group_start in pair["groups"]:
-            for j in range(group_start, group_start + 8):
-                pixels[j] = pair["color"]
-        pixels.show()
-        time.sleep(1)  # Pause after each group is turned on
-
-    # Step 2: Fade all LEDs to the target color
     while True:  # Infinite cycle
-        # Perform fade to the target color
-        for step in range(steps + 1):
-            fade_in_ratio = step / steps  # Ratio for target color
-            fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
+        # Step 1: Start with all LEDs set to white
+        pixels.fill(COLOR_WHITE)
+        pixels.show()
+        time.sleep(1)  # Pause at white
 
-            # Apply fade to all groups
-            for pair in paired_groups:
+        # Step 2: Sequentially fade each group to its collection color
+        for pair in paired_groups:
+            for step in range(steps + 1):
+                fade_in_ratio = step / steps  # Ratio for collection color
+                fade_out_ratio = 1 - fade_in_ratio  # Ratio for white
+
                 for group_start in pair["groups"]:
                     for j in range(group_start, group_start + 8):
                         # Calculate the blended color
-                        r = int(pair["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
-                        g = int(pair["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
-                        b = int(pair["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
+                        r = int(COLOR_WHITE[0] * fade_out_ratio + pair["color"][0] * fade_in_ratio)
+                        g = int(COLOR_WHITE[1] * fade_out_ratio + pair["color"][1] * fade_in_ratio)
+                        b = int(COLOR_WHITE[2] * fade_out_ratio + pair["color"][2] * fade_in_ratio)
                         pixels[j] = (r, g, b)
 
-            # Apply changes to the strip
-            pixels.show()
-            time.sleep(interval)
+                # Apply changes to the strip
+                pixels.show()
+                time.sleep(interval)
 
-        # Reverse fade (from target color back to the collection color)
-        for step in range(steps, -1, -1):
-            fade_in_ratio = step / steps  # Ratio for target color
-            fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
+        # Step 3: Fade all LEDs back to white
+        for step in range(steps + 1):
+            fade_in_ratio = step / steps  # Ratio for white
+            fade_out_ratio = 1 - fade_in_ratio  # Ratio for collection color
 
-            # Apply reverse fade to all groups
             for pair in paired_groups:
                 for group_start in pair["groups"]:
                     for j in range(group_start, group_start + 8):
                         # Calculate the blended color
-                        r = int(pair["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
-                        g = int(pair["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
-                        b = int(pair["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
+                        r = int(pair["color"][0] * fade_out_ratio + COLOR_WHITE[0] * fade_in_ratio)
+                        g = int(pair["color"][1] * fade_out_ratio + COLOR_WHITE[1] * fade_in_ratio)
+                        b = int(pair["color"][2] * fade_out_ratio + COLOR_WHITE[2] * fade_in_ratio)
                         pixels[j] = (r, g, b)
 
             # Apply changes to the strip
