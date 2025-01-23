@@ -18,10 +18,11 @@ BRIGHTNESS = 1  # Brightness (0.0 to 1.0)
 
 # Colors
 COLOR_WHITE = (255, 255, 255)
-COLOR_PURPLE = (50, 0, 90)  # Garbage
-COLOR_GREEN = (0, 128, 0)  # Compost
-COLOR_BLUE = (0, 0, 255)  # Recycling
-COLOR_RED = (255, 0, 0)  # Holiday
+COLOR_GARBAGE = (50, 0, 90)  # Garbage
+COLOR_ORGANIC = (0, 128, 0)  # Compost
+COLOR_RECYCLING = (0, 0, 255)  # Recycling
+COLOR_HOLIDAY = (255, 0, 0)  # Holiday
+COLOR_NO = (255, 165, 0)
 COLOR_OFF = (0, 0, 0)
 
 # Set up the LED strip
@@ -33,9 +34,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
     logger.info(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")
 
     # Group configurations
-    garbage_color = COLOR_PURPLE if garbage_on else COLOR_WHITE  # Garbage group
-    organics_color = COLOR_GREEN if organics_on else COLOR_WHITE  # Organics group
-    recycling_color = COLOR_BLUE if recycling_on else COLOR_WHITE  # Recycling group
+    garbage_color = COLOR_GARBAGE if garbage_on else COLOR_WHITE  # Garbage group
+    organics_color = COLOR_ORGANIC if organics_on else COLOR_WHITE  # Organics group
+    recycling_color = COLOR_RECYCLING if recycling_on else COLOR_WHITE  # Recycling group
 
     # Assign colors to groups of 8
     for i in range(8):
@@ -53,7 +54,7 @@ def set_leds(garbage_on, organics_on, recycling_on):
 def set_holiday_lights():
     """Set all LEDs to solid red for a holiday."""
     logger.info("Setting LEDs to solid red for holiday.")
-    pixels.fill(COLOR_RED)
+    pixels.fill(COLOR_HOLIDAY)
     pixels.show()
 
 
@@ -62,9 +63,9 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
     logger.info(f"Cycling and fading LEDs to {target_color} for collections: {collections}")
 
     # Determine collection colors
-    garbage_color = COLOR_PURPLE if "garbage" in collections else COLOR_OFF
-    organics_color = COLOR_GREEN if "organics" in collections else COLOR_OFF
-    recycling_color = COLOR_BLUE if "recycling" in collections else COLOR_OFF
+    garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
+    organics_color = COLOR_ORGANIC if "organics" in collections else COLOR_NO
+    recycling_color = COLOR_RECYCLING if "recycling" in collections else COLOR_NO
 
     # Define the paired groups and their colors
     paired_groups = [
@@ -156,7 +157,7 @@ def update_leds_today():
                     next_date = datetime.strptime(next_schedule["date"], "%Y-%m-%d").date()
                     if next_date == tomorrow and len(next_schedule["collections"]) > 0:
                         logger.info(f"Holiday today with collection tomorrow: {next_schedule['collections']}")
-                        fade_to_color(next_schedule["collections"], COLOR_RED, steps=100, interval=0.02)  # Cycle and fade to red
+                        fade_to_color(next_schedule["collections"], COLOR_HOLIDAY, steps=100, interval=0.02)  # Cycle and fade to red
                         return
 
                 # No collection tomorrow, just show solid red
