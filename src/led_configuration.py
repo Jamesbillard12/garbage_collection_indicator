@@ -29,6 +29,34 @@ COLOR_OFF = (0, 0, 0)
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
+def pulsate_white(steps=50, interval=0.05):
+    """
+    Make the LEDs pulsate white with a smooth breathing effect.
+
+    Args:
+        steps (int): The number of steps for the fade-in and fade-out. Default is 50.
+        interval (float): The time (in seconds) between each brightness step. Default is 0.05.
+    """
+    logger.info("Starting pulsating white effect.")
+
+    while True:  # Infinite loop to keep pulsating
+        # Fade in: Gradually increase brightness to white
+        for step in range(steps + 1):
+            brightness = step / steps  # Calculate brightness as a ratio (0.0 to 1.0)
+            white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
+            pixels.fill(white)
+            pixels.show()
+            time.sleep(interval)
+
+        # Fade out: Gradually decrease brightness to off
+        for step in range(steps, -1, -1):
+            brightness = step / steps  # Calculate brightness as a ratio (1.0 to 0.0)
+            white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
+            pixels.fill(white)
+            pixels.show()
+            time.sleep(interval)
+
+
 # Helper Functions
 def set_leds(garbage_on, organics_on, recycling_on):
     """Set LED colors based on collection status for groups of 8 LEDs."""
