@@ -41,41 +41,44 @@ def set_leds(garbage_on, organics_on, recycling_on):
 
 def blink_leds(daily_schedule, times=3, interval=0.5):
     """Blink each group of LEDs sequentially."""
-    print(f"Blinking LEDs: {daily_schedule['collections']}")
+    print(f"Blinking LEDs for: {daily_schedule['collections']}")
 
-    # Group configurations
+    # Determine the colors for each group
     garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
     organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
     recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
 
     for _ in range(times):
-        # Turn on and off each group sequentially
-        # Garbage group (LEDs 0–7)
+        # Blink the garbage group (LEDs 0–7)
         for i in range(8):
             pixels[i] = garbage_color
         pixels.show()
         time.sleep(interval)
-        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        for i in range(8):
+            pixels[i] = COLOR_OFF  # Turn off garbage group
         pixels.show()
 
-        # Organics group (LEDs 8–15)
+        # Blink the organics group (LEDs 8–15)
         for i in range(8, 16):
             pixels[i] = organics_color
         pixels.show()
         time.sleep(interval)
-        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        for i in range(8, 16):
+            pixels[i] = COLOR_OFF  # Turn off organics group
         pixels.show()
 
-        # Recycling group (LEDs 16–23)
+        # Blink the recycling group (LEDs 16–23)
         for i in range(16, 24):
             pixels[i] = recycling_color
         pixels.show()
         time.sleep(interval)
-        pixels.fill(COLOR_OFF)  # Turn off all LEDs
+        for i in range(16, 24):
+            pixels[i] = COLOR_OFF  # Turn off recycling group
         pixels.show()
 
-        # Add a pause between cycles
+        # Optional: Short pause between full cycles
         time.sleep(interval)
+
 
 
 def update_leds_today():
