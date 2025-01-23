@@ -97,11 +97,11 @@ if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
     turn_off_leds()
 
-    # Schedule the daily run at 6:00 AM
-    schedule_daily_run(hour=6, minute=0)
-
     # Run fetch and update process immediately on startup
     fetch_or_load_and_update_leds(force_fetch=True)
+
+    # Schedule the daily run at 6:00 AM
+    schedule_daily_run(hour=6, minute=0)
 
     # Keep the application running
     while True:
