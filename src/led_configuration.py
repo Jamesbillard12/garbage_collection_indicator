@@ -111,7 +111,7 @@ def update_leds_today():
         for daily_schedule in daily_schedules:
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
-            if date_obj == today:
+            if date_obj == today and len(daily_schedule["collections"]) > 0:
                 # Set LEDs solid for today's collections
                 print(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
                 set_leds(
@@ -120,7 +120,7 @@ def update_leds_today():
                     "recycling" in daily_schedule["collections"],
                 )
 
-            elif date_obj == tomorrow:
+            elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
                 fade_leds(daily_schedule, steps=100, interval=0.02)
