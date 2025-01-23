@@ -5,7 +5,7 @@ from src.handle_schedule import load_schedule
 from datetime import datetime, timedelta
 
 # LED Strip Configuration
-NUM_LEDS = 8  # Number of LEDs in your strip
+NUM_LEDS = 24  # Number of LEDs in your strip
 PIN = board.D10  # GPIO pin connected to the LED strip
 BRIGHTNESS = 1  # Brightness (0.0 to 1.0)
 
@@ -21,6 +21,23 @@ pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=Fals
 
 # Helper Functions
 def set_leds(garbage_on, organics_on, recycling_on):
+    """Set LED colors based on collection status for groups of 8 LEDs."""
+    print(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")  # Debugging
+
+    # Group configurations
+    garbage_color = COLOR_PURPLE if garbage_on else COLOR_WHITE  # Garbage group
+    organics_color = COLOR_GREEN if organics_on else COLOR_WHITE  # Organics group
+    recycling_color = COLOR_BLUE if recycling_on else COLOR_WHITE  # Recycling group
+
+    # Assign colors to groups of 8
+    for i in range(8):
+        pixels[i] = garbage_color  # First group (garbage)
+        pixels[i + 8] = organics_color  # Second group (organics)
+        pixels[i + 16] = recycling_color  # Third group (recycling)
+
+    # Apply changes to the strip
+    pixels.show()
+
     """Set LED colors based on collection status."""
     print(f"Setting LEDs: Garbage: {garbage_on}, Organics: {organics_on}, Recycling: {recycling_on}")  # Debugging
 
@@ -75,7 +92,7 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections: {daily_schedule['collections']}")
-                # blink_leds(daily_schedule)
+                blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
     # pixels.fill(COLOR_OFF)
