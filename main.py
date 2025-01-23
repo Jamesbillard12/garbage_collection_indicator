@@ -6,6 +6,16 @@ from datetime import datetime, timedelta
 import time
 import threading
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the minimum level to capture
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Output logs to the console
+        logging.FileHandler("led_scheduler.log")  # Save logs to a file
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 def run_process():
