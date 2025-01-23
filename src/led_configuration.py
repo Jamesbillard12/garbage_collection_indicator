@@ -106,11 +106,6 @@ def update_leds_today():
             elif date_obj == tomorrow:
                 # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                set_leds(
-                    "garbage" in daily_schedule["collections"],
-                    "organics" in daily_schedule["collections"],
-                    "recycling" in daily_schedule["collections"],
-                )
                 blink_leds(daily_schedule)
 
     # Turn off LEDs if no match for today or tomorrow
