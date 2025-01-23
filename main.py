@@ -33,7 +33,7 @@ def fetch_and_update_leds():
     Fetch the collection data, save it, and update the LEDs.
     Re-fetch if no valid data is found.
     """
-    pulsate_white()
+    threading.Thread(target=pulsate_white, daemon=True)
     try:
         logger.info("Fetching collection data on application start...")
         collections = scrape_with_playwright()
@@ -124,11 +124,11 @@ def schedule_daily_run(hour=6, minute=0):
 if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
 
-    # Run fetch and update process immediately on startup
-    fetch_and_update_leds()
-
     # Schedule the daily run at 6:00 AM
     schedule_daily_run(hour=6, minute=0)
+
+    # Run fetch and update process immediately on startup
+    fetch_and_update_leds()
 
     # Keep the application running
     while True:
