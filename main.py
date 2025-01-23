@@ -33,7 +33,6 @@ def fetch_and_update_leds():
     Fetch the collection data, save it, and update the LEDs.
     Re-fetch if no valid data is found.
     """
-    threading.Thread(target=pulsate_white, daemon=True)
     try:
         logger.info("Fetching collection data on application start...")
         collections = scrape_with_playwright()
@@ -65,6 +64,7 @@ def load_or_fetch_schedule_and_update_leds():
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     """
+    threading.Thread(target=pulsate_white, daemon=True)
     try:
         if is_beginning_or_end_of_month():
             logger.info("It's the beginning or end of the month. Fetching new collection data...")
