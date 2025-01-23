@@ -7,19 +7,19 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 def run_process():
-    logger.info('running process')
+    print('running process')
     today = datetime.now().day
     last_day_of_month = (datetime.now() + timedelta(days=31)).replace(day=1) - timedelta(days=1)
 
     if today == 1 or today == last_day_of_month.day:
         # Run scraping at the beginning and end of the month
-        logger.info('scraping recology site for collection dates')
+        print('scraping recology site for collection dates')
         collections = scrape_with_playwright()
         save_schedule(collections)
         update_leds_today()
     else:
         # Update LEDs daily
-        logger.info('running leds')
+        print('running leds')
         update_leds_today()
     
 
