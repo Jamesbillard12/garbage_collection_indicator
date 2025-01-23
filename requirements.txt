@@ -1,8 +1,13 @@
 beautifulsoup4==4.12.3
+board==1.0
 bs4==0.0.2
 greenlet==3.1.1
+neopixel==0.0.1
+numpy==2.0.2
 playwright==1.49.1
+PyAudio==0.2.14
 pyee==12.0.0
 python-dotenv==1.0.1
+scipy==1.13.1
 soupsieve==2.6
 typing-extensions==4.12.2
