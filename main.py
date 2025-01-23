@@ -15,8 +15,10 @@ def run_process():
         logger.info('scraping recology site for collection dates')
         collections = scrape_with_playwright()
         save_schedule(collections)
+        update_leds_today()
     else:
         # Update LEDs daily
+        logger.info('running leds')
         update_leds_today()
     
 
