@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds
+from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white
 import threading
 
 # Configure logging
@@ -28,45 +28,20 @@ def has_valid_collections(collections):
                 return True  # Found valid collections
     return False  # No valid collections found
 
-def fetch_and_update_leds():
-    """
-    Fetch the collection data, save it, and update the LEDs.
-    Re-fetch if no valid data is found.
-    """
-    try:
-        logger.info("Fetching collection data on application start...")
-        collections = scrape_with_playwright()
-        save_schedule(collections)
-
-        # Validate the fetched data
-        if has_valid_collections(collections):
-            logger.info("Valid collections found. Updating LEDs...")
-            update_leds_today()
-        else:
-            logger.warning("No valid collections found on initial fetch. Re-fetching data...")
-            collections = scrape_with_playwright()
-            save_schedule(collections)
-
-            # Validate again after re-fetching
-            if has_valid_collections(collections):
-                logger.info("Valid collections found after re-fetching. Updating LEDs...")
-                update_leds_today()
-            else:
-                logger.error("No valid collections found even after re-fetching. Turning off LEDs as a fallback.")
-                blink_red_and_turn_off()
-    except Exception as e:
-        logger.error(f"Failed to fetch or update LEDs: {e}")
-        blink_red_and_turn_off()  # Turn off LEDs on failure
-
-def load_or_fetch_schedule_and_update_leds():
+def fetch_or_load_and_update_leds(force_fetch=False):
     """
     Load the schedule or fetch new data if:
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
+    - force_fetch is True.
     """
+    pulsate_thread = None
     try:
-        if is_beginning_or_end_of_month():
-            logger.info("It's the beginning or end of the month. Fetching new collection data...")
+        pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05), daemon=True)
+        pulsate_thread.start()
+        # Decide whether to fetch or load based on conditions
+        if force_fetch or is_beginning_or_end_of_month():
+            logger.info("Fetching new collection data...")
             collections = scrape_with_playwright()
             save_schedule(collections)
         else:
@@ -78,7 +53,7 @@ def load_or_fetch_schedule_and_update_leds():
             logger.info("Valid collections found. Updating LEDs...")
             update_leds_today()
         else:
-            logger.warning("No valid collections found in loaded schedule. Re-fetching data...")
+            logger.warning("No valid collections found. Re-fetching data...")
             collections = scrape_with_playwright()
             save_schedule(collections)
 
@@ -92,6 +67,12 @@ def load_or_fetch_schedule_and_update_leds():
     except Exception as e:
         logger.error(f"Failed to load, fetch, or update LEDs: {e}")
         blink_red_and_turn_off()  # Turn off LEDs on failure
+    finally:
+        # Ensure pulsating stops once fetching/loading is complete
+        if pulsate_thread and pulsate_thread.is_alive():
+            logger.info("Stopping pulsating white effect.")
+            turn_off_leds()  # Ensure LEDs turn off after pulsating
+
 
 def schedule_daily_run(hour=6, minute=0):
     """
@@ -114,7 +95,7 @@ def schedule_daily_run(hour=6, minute=0):
             time.sleep(wait_time)
 
             # Run the process at the scheduled time
-            load_or_fetch_schedule_and_update_leds()
+            fetch_or_load_and_update_leds()
 
     # Run the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=run_at_scheduled_time, daemon=True)
@@ -128,7 +109,7 @@ if __name__ == "__main__":
     schedule_daily_run(hour=6, minute=0)
 
     # Run fetch and update process immediately on startup
-    fetch_and_update_leds()
+    fetch_or_load_and_update_leds(force_fetch=True)
 
     # Keep the application running
     while True:
