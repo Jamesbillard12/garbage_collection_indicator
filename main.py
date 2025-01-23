@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off, pulsate_white
+from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds
 import threading
 
 # Configure logging
@@ -64,7 +64,6 @@ def load_or_fetch_schedule_and_update_leds():
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     """
-    pulsate_white()
     try:
         if is_beginning_or_end_of_month():
             logger.info("It's the beginning or end of the month. Fetching new collection data...")
@@ -123,6 +122,7 @@ def schedule_daily_run(hour=6, minute=0):
 
 if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
+    turn_off_leds()
 
     # Schedule the daily run at 6:00 AM
     schedule_daily_run(hour=6, minute=0)
