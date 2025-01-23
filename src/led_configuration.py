@@ -133,15 +133,4 @@ def update_leds_today():
         )
     elif not today_or_tomorrow_handled:
         # No collections at all for the week
-        print("No collections found for today, tomorrow, or the rest of the week. Turning off LEDs.")
-        pixels.fill(COLOR_OFF)
-        pixels.show()
-
-# Ensure LEDs are turned off when the program exits
-def turn_off_leds():
-    print("Turning off LEDs.")
-    pixels.fill(COLOR_OFF)
-    pixels.show()
-
-# Register the turn_off_leds function to run on exit
-atexit.register(turn_off_leds)
+        print("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
