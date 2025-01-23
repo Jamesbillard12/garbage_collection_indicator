@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white
+from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white, pixels
 import threading
 import atexit
 
@@ -19,6 +19,7 @@ def cleanup_resources():
     try:
         logger.info("Cleaning up resources on exit...")
         turn_off_leds()
+        pixels.deinit()
     except Exception as e:
         logger.error(f"Failed to clean up resources: {e}")
 
