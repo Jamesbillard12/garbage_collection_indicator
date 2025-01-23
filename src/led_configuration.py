@@ -42,29 +42,30 @@ def blink_leds(times=3, interval=0.5):
 def update_leds_today():
     """Update LEDs based on today's and tomorrow's schedule."""
     schedule = load_schedule()
-    print(schedule)
+    print("Schedule:", schedule)  # Debugging print to ensure schedule is loaded
 
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
 
-    for date_str, info in schedule.items():
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+    # Iterate through the schedule
+    for week_key, daily_schedules in schedule.items():
+        for daily_schedule in daily_schedules:
+            date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
-        if date_obj == today:
-            # Set LEDs solid for today's collections
-            print(f"Today's collections: {info['collections']}")
-            set_leds(
-                "garbage" in info["collections"],
-                "organics" in info["collections"],
-                "recycling" in info["collections"],
-            )
+            if date_obj == today:
+                # Set LEDs solid for today's collections
+                print(f"Today's collections: {daily_schedule['collections']}")
+                set_leds(
+                    "garbage" in daily_schedule["collections"],
+                    "organics" in daily_schedule["collections"],
+                    "recycling" in daily_schedule["collections"],
+                )
 
-        elif date_obj == tomorrow:
-            # Blink LEDs for tomorrow's collections
-            print(f"Tomorrow's collections: {info['collections']}")
-            blink_leds()
+            elif date_obj == tomorrow:
+                # Blink LEDs for tomorrow's collections
+                print(f"Tomorrow's collections: {daily_schedule['collections']}")
+                blink_leds()
 
-        else:
-            # Turn off LEDs for other days
-            pixels.fill(COLOR_OFF)
-            pixels.show()
+    # Turn off LEDs if no match for today or tomorrow
+    pixels.fill(COLOR_OFF)
+    pixels.show()
