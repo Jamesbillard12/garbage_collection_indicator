@@ -25,9 +25,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
     print(f"Setting LEDs: Garbage: {garbage_on}, Organics: {organics_on}, Recycling: {recycling_on}")  # Debugging
 
     # Set colors for each LED
-    pixels[0] = COLOR_PURPLE if garbage_on else COLOR_WHITE  # First LED
-    pixels[1] = COLOR_GREEN if organics_on else COLOR_WHITE  # Second LED
-    pixels[2] = COLOR_BLUE if recycling_on else COLOR_WHITE  # Third LED
+    pixels[0] = COLOR_PURPLE  # First LED
+    pixels[1] = COLOR_GREEN   # Second LED
+    pixels[2] = COLOR_BLUE   # Third LED
 
     # Apply changes to the strip
     pixels.show()
