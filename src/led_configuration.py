@@ -99,33 +99,47 @@ def fade_leds(daily_schedule, steps=50, interval=0.5):
 
 
 def update_leds_today():
-    """Update LEDs based on today's and tomorrow's schedule."""
+    """Update LEDs based on the upcoming schedule, with special handling for today and tomorrow."""
     schedule = load_schedule()
     print("Schedule:", schedule)  # Debugging print to ensure schedule is loaded
 
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
 
+    upcoming_collections = []  # Store collection types for the week
+    today_or_tomorrow_handled = False  # Flag to check if today/tomorrow was handled
+
     # Iterate through the schedule
     for week_key, daily_schedules in schedule.items():
         for daily_schedule in daily_schedules:
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
+            # Check for today's collections
             if date_obj == today and len(daily_schedule["collections"]) > 0:
-                # Set LEDs solid for today's collections
                 print(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
-                set_leds(
-                    "garbage" in daily_schedule["collections"],
-                    "organics" in daily_schedule["collections"],
-                    "recycling" in daily_schedule["collections"],
-                )
+                fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for today
+                today_or_tomorrow_handled = True
 
+            # Check for tomorrow's collections
             elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
-                # Blink LEDs for tomorrow's collections
                 print(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_leds(daily_schedule, steps=100, interval=0.02)
+                fade_leds(daily_schedule, steps=100, interval=0.02)  # Fade lights for tomorrow
+                today_or_tomorrow_handled = True
 
+            # Collect all upcoming collections for the week (after today)
+            elif date_obj > today and len(daily_schedule["collections"]) > 0:
+                upcoming_collections.extend(daily_schedule["collections"])
 
-    # Turn off LEDs if no match for today or tomorrow
-    pixels.fill(COLOR_OFF)
-    pixels.show()
+    # If no today/tomorrow collections were handled, show solid lights for the week's upcoming collections
+    if not today_or_tomorrow_handled and upcoming_collections:
+        print(f"Upcoming collections this week: {set(upcoming_collections)}")
+        set_leds(
+            "garbage" in upcoming_collections,
+            "organics" in upcoming_collections,
+            "recycling" in upcoming_collections,
+        )
+    elif not today_or_tomorrow_handled:
+        # No collections at all for the week
+        print("No collections found for today, tomorrow, or the rest of the week. Turning off LEDs.")
+        pixels.fill(COLOR_OFF)
+        pixels.show()
