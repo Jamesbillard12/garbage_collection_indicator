@@ -161,7 +161,6 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
 
 
 def update_leds_today():
-    turn_off_leds()
     """Update LEDs based on the upcoming schedule, with special handling for today and tomorrow."""
     schedule = load_schedule()
     logger.info(f"Schedule: {format_schedule(schedule)}")  # Debugging logger.info to ensure schedule is loaded
