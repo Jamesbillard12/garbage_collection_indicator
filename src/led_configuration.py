@@ -25,9 +25,9 @@ def set_leds(garbage_on, organics_on, recycling_on):
     print(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")  # Debugging
 
     # Group configurations
-    garbage_color = COLOR_PURPLE if garbage_on else COLOR_WHITE  # Garbage group
-    organics_color = COLOR_GREEN if organics_on else COLOR_WHITE  # Organics group
-    recycling_color = COLOR_BLUE if recycling_on else COLOR_WHITE  # Recycling group
+    garbage_color = COLOR_PURPLE if garbage_on else COLOR_OFF  # Garbage group
+    organics_color = COLOR_GREEN if organics_on else COLOR_OFF  # Organics group
+    recycling_color = COLOR_BLUE if recycling_on else COLOR_OFF  # Recycling group
 
     # Assign colors to groups of 8
     for i in range(8):
@@ -44,9 +44,9 @@ def blink_leds(daily_schedule, times=3, interval=0.5):
     print(f"Blinking LEDs for: {daily_schedule['collections']}")
 
     # Determine the colors for each group
-    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
-    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
-    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
+    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_OFF
+    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_OFF
+    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_OFF
 
     for _ in range(times):
         # Blink the garbage group (LEDs 0–7)
