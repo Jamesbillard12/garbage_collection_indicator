@@ -39,41 +39,48 @@ def set_leds(garbage_on, organics_on, recycling_on):
     pixels.show()
 
 
-def fade_group(start_color, end_color, group_start, group_end, steps=50, delay=0.05):
-    """
-    Fades a specific group of LEDs from one color to another.
+def fade_groups(daily_schedule, steps=50, delay=0.05):
+    """Fade multiple LED groups with overlapping transitions."""
+    print(f"Fading LEDs with overlap for: {daily_schedule['collections']}")
 
-    Args:
-        start_color (tuple): The starting RGB color (R, G, B).
-        end_color (tuple): The ending RGB color (R, G, B).
-        group_start (int): Start index of the LED group.
-        group_end (int): End index (exclusive) of the LED group.
-        steps (int): Number of steps for the transition.
-        delay (float): Delay in seconds between each step.
-    """
-    # Extract RGB components
-    start_r, start_g, start_b = start_color
-    end_r, end_g, end_b = end_color
+    # Determine colors for each group
+    garbage_color = COLOR_PURPLE if "garbage" in daily_schedule["collections"] else COLOR_WHITE
+    organics_color = COLOR_GREEN if "organics" in daily_schedule["collections"] else COLOR_WHITE
+    recycling_color = COLOR_BLUE if "recycling" in daily_schedule["collections"] else COLOR_WHITE
 
-    # Calculate step size for each color component
-    step_r = (end_r - start_r) / steps
-    step_g = (end_g - start_g) / steps
-    step_b = (end_b - start_b) / steps
+    # Define the groups and their colors
+    groups = [
+        {"start": 0, "end": 8, "start_color": COLOR_OFF, "end_color": garbage_color},
+        {"start": 8, "end": 16, "start_color": COLOR_OFF, "end_color": organics_color},
+        {"start": 16, "end": 24, "start_color": COLOR_OFF, "end_color": recycling_color},
+    ]
 
-    # Fade over the specified number of steps
+    # Extract RGB component deltas for each group
+    for group in groups:
+        start_r, start_g, start_b = group["start_color"]
+        end_r, end_g, end_b = group["end_color"]
+        group["step_r"] = (end_r - start_r) / steps
+        group["step_g"] = (end_g - start_g) / steps
+        group["step_b"] = (end_b - start_b) / steps
+
+    # Perform overlapping fades
     for step in range(steps + 1):
-        # Calculate current color
-        current_r = int(start_r + step * step_r)
-        current_g = int(start_g + step * step_g)
-        current_b = int(start_b + step * step_b)
+        for group in groups:
+            # Calculate current color for this group
+            current_r = int(group["start_color"][0] + step * group["step_r"])
+            current_g = int(group["start_color"][1] + step * group["step_g"])
+            current_b = int(group["start_color"][2] + step * group["step_b"])
 
-        # Update the specified group of LEDs
-        for i in range(group_start, group_end):
-            pixels[i] = (current_r, current_g, current_b)
+            # Update the LEDs in this group
+            for i in range(group["start"], group["end"]):
+                pixels[i] = (current_r, current_g, current_b)
+
+        # Apply the changes to all LEDs
         pixels.show()
 
         # Delay between steps
         time.sleep(delay)
+
 
 
 def fade_leds(daily_schedule, steps=50, interval=0.5):
