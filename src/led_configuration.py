@@ -58,7 +58,7 @@ def set_holiday_lights():
 
 
 def fade_to_color(collections, target_color, steps=50, interval=0.05):
-    """Cycle through collection colors, fading each to the target color (white or red) during transitions."""
+    """Cycle through collection colors, with each paired group fading in and out to the target color."""
     logger.info(f"Cycling and fading LEDs to {target_color} for collections: {collections}")
 
     # Determine collection colors
@@ -66,39 +66,49 @@ def fade_to_color(collections, target_color, steps=50, interval=0.05):
     organics_color = COLOR_GREEN if "organics" in collections else COLOR_WHITE
     recycling_color = COLOR_BLUE if "recycling" in collections else COLOR_WHITE
 
-    # Define the groups and their colors
-    groups = [
-        {"start": 0, "end": 8, "color": garbage_color},
-        {"start": 8, "end": 16, "color": organics_color},
-        {"start": 16, "end": 24, "color": recycling_color},
-        {"start": 24, "end": 32, "color": recycling_color},  # Mimics 3rd group
-        {"start": 32, "end": 40, "color": organics_color},  # Mimics 2nd group
-        {"start": 40, "end": 48, "color": garbage_color},  # Mimics 1st group
+    # Define the paired groups and their colors
+    paired_groups = [
+        {"groups": [0, 40], "color": garbage_color},  # Group 1 and 6
+        {"groups": [8, 32], "color": organics_color},  # Group 2 and 5
+        {"groups": [16, 24], "color": recycling_color},  # Group 3 and 4
     ]
 
     while True:  # Infinite cycle
-        for group in groups:
-            # Perform fade to the target color for the current group
+        for pair in paired_groups:
+            # Perform fade for the current paired groups
             for step in range(steps + 1):
                 fade_in_ratio = step / steps  # Ratio for target color
                 fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
 
-                # Fade the LEDs for this group
-                for j in range(group["start"], group["end"]):
-                    r = int(group["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
-                    g = int(group["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
-                    b = int(group["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
-                    pixels[j] = (r, g, b)
+                for group_start in pair["groups"]:
+                    for j in range(group_start, group_start + 8):
+                        # Calculate the blended color
+                        r = int(pair["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
+                        g = int(pair["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
+                        b = int(pair["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
+                        pixels[j] = (r, g, b)
 
                 # Apply changes to the strip
                 pixels.show()
                 time.sleep(interval)
 
-            # Hold the group fully in the target color for a moment
-            for j in range(group["start"], group["end"]):
-                pixels[j] = target_color
-            pixels.show()
-            time.sleep(interval * 10)
+            # Reverse fade (from target color back to the collection color)
+            for step in range(steps, -1, -1):
+                fade_in_ratio = step / steps  # Ratio for target color
+                fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
+
+                for group_start in pair["groups"]:
+                    for j in range(group_start, group_start + 8):
+                        # Calculate the blended color
+                        r = int(pair["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
+                        g = int(pair["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
+                        b = int(pair["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
+                        pixels[j] = (r, g, b)
+
+                # Apply changes to the strip
+                pixels.show()
+                time.sleep(interval)
+
 
 
 def update_leds_today():
