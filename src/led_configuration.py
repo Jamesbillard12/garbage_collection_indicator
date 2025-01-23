@@ -3,6 +3,7 @@ import board
 import time
 from src.handle_schedule import load_schedule
 from datetime import datetime, timedelta
+import atexit
 
 # LED Strip Configuration
 NUM_LEDS = 24  # Number of LEDs in your strip
@@ -135,3 +136,12 @@ def update_leds_today():
         print("No collections found for today, tomorrow, or the rest of the week. Turning off LEDs.")
         pixels.fill(COLOR_OFF)
         pixels.show()
+
+# Ensure LEDs are turned off when the program exits
+def turn_off_leds():
+    print("Turning off LEDs.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
+
+# Register the turn_off_leds function to run on exit
+atexit.register(turn_off_leds)
