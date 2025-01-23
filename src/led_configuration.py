@@ -15,6 +15,7 @@ COLOR_WHITE = (255, 255, 255)
 COLOR_PURPLE = (128, 0, 128)  # Garbage
 COLOR_GREEN = (0, 255, 0)  # Organics
 COLOR_BLUE = (0, 0, 255)  # Recycling
+COLOR_RED = (255, 0, 0)  # Holiday
 COLOR_OFF = (0, 0, 0)
 
 # Set up the LED strip
@@ -37,6 +38,13 @@ def set_leds(garbage_on, organics_on, recycling_on):
         pixels[i + 16] = recycling_color  # Third group (recycling)
 
     # Apply changes to the strip
+    pixels.show()
+
+
+def set_holiday_lights():
+    """Set all LEDs to solid red for a holiday."""
+    print("Setting LEDs to solid red for holiday.")
+    pixels.fill(COLOR_RED)
     pixels.show()
 
 
@@ -107,6 +115,12 @@ def update_leds_today():
         for daily_schedule in daily_schedules:
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
+            # Check for holidays
+            if "holiday" in daily_schedule["collections"]:
+                print(f"Holiday detected on {date_obj}. Turning lights solid red.")
+                set_holiday_lights()
+                return
+
             # Check for today's collections
             if date_obj == today and len(daily_schedule["collections"]) > 0:
                 print(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
@@ -134,3 +148,12 @@ def update_leds_today():
     elif not today_or_tomorrow_handled:
         # No collections at all for the week
         print("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
+
+# Ensure LEDs are turned off when the program exits
+def turn_off_leds():
+    print("Turning off LEDs.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
+
+# Register the turn_off_leds function to run on exit
+atexit.register(turn_off_leds)
