@@ -12,7 +12,7 @@ def scrape_with_playwright():
     address = os.environ["address"]
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)  # Use headless=True for headless mode
+        browser = p.chromium.launch(headless=True)  # Use headless=True for headless mode
         context = browser.new_context()
         page = context.new_page()
 
