@@ -148,8 +148,15 @@ def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5)
             pixels.show()
             time.sleep(interval)
 
+# Ensure LEDs are turned off when the program exits
+def turn_off_leds():
+    logger.info("Turning off LEDs.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
+
 
 def update_leds_today():
+    turn_off_leds()
     """Update LEDs based on the upcoming schedule, with special handling for today and tomorrow."""
     schedule = load_schedule()
     logger.info(f"Schedule: {format_schedule(schedule)}")  # Debugging logger.info to ensure schedule is loaded
@@ -216,11 +223,7 @@ def update_leds_today():
         logger.info("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
 
 
-# Ensure LEDs are turned off when the program exits
-def turn_off_leds():
-    logger.info("Turning off LEDs.")
-    pixels.fill(COLOR_OFF)
-    pixels.show()
+
 
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
@@ -249,5 +252,4 @@ def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
 
     # Ensure LEDs are off after blinking
     logger.info("Turning off all LEDs after blinking.")
-    pixels.fill(COLOR_OFF)
-    pixels.show()
+    turn_off_leds()
