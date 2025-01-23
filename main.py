@@ -64,7 +64,6 @@ def load_or_fetch_schedule_and_update_leds():
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     """
-    pulsate_white()
     try:
         if is_beginning_or_end_of_month():
             logger.info("It's the beginning or end of the month. Fetching new collection data...")
