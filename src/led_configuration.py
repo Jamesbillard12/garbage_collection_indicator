@@ -5,6 +5,11 @@ from src.handle_schedule import load_schedule
 from datetime import datetime, timedelta
 import atexit
 import logging
+import json
+
+def format_schedule(schedule):
+    return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
+
 
 logger = logging.getLogger(__name__)
 # LED Strip Configuration
@@ -104,7 +109,7 @@ def fade_leds(daily_schedule, steps=50, interval=0.05):
 def update_leds_today():
     """Update LEDs based on the upcoming schedule, with special handling for today and tomorrow."""
     schedule = load_schedule()
-    logger.info("Schedule:", schedule)  # Debugging logger.info to ensure schedule is loaded
+    logger.info(f"Schedule: {format_schedule(schedule)}")  # Debugging logger.info to ensure schedule is loaded
 
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
