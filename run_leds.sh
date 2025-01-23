@@ -3,4 +3,4 @@
 source .venv/bin/activate
 
 # Run the Python script
-python3 /path/to/main.js
+python3 main.js
