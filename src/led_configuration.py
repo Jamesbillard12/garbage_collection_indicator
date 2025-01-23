@@ -57,9 +57,9 @@ def set_holiday_lights():
     pixels.show()
 
 
-def fade_red_with_collections(collections, steps=50, interval=0.05):
-    """Fade LEDs between red and the collection colors for a holiday followed by a collection."""
-    logger.info(f"Fading between red and collections: {collections}")
+def fade_to_color(collections, target_color, steps=50, interval=0.05):
+    """Cycle through collection colors, fading each to the target color (white or red) during transitions."""
+    logger.info(f"Cycling and fading LEDs to {target_color} for collections: {collections}")
 
     # Determine collection colors
     garbage_color = COLOR_PURPLE if "garbage" in collections else COLOR_WHITE
@@ -76,75 +76,29 @@ def fade_red_with_collections(collections, steps=50, interval=0.05):
         {"start": 40, "end": 48, "color": garbage_color},  # Mimics 1st group
     ]
 
-    # Fade between red and the collection colors
-    for _ in range(steps):  # Loop for the specified number of fade steps
-        for step in range(steps + 1):
-            fade_in_ratio = step / steps
-            fade_out_ratio = 1 - fade_in_ratio
-
-            # Blend each group color with red
-            for group in groups:
-                for j in range(group["start"], group["end"]):
-                    r = int(group["color"][0] * fade_in_ratio + COLOR_RED[0] * fade_out_ratio)
-                    g = int(group["color"][1] * fade_in_ratio + COLOR_RED[1] * fade_out_ratio)
-                    b = int(group["color"][2] * fade_in_ratio + COLOR_RED[2] * fade_out_ratio)
-                    pixels[j] = (r, g, b)
-
-            # Apply changes to the strip
-            pixels.show()
-            time.sleep(interval)
-
-        # Reverse fade (from collection colors back to red)
-        for step in range(steps, -1, -1):
-            fade_in_ratio = step / steps
-            fade_out_ratio = 1 - fade_in_ratio
-
-            for group in groups:
-                for j in range(group["start"], group["end"]):
-                    r = int(group["color"][0] * fade_in_ratio + COLOR_RED[0] * fade_out_ratio)
-                    g = int(group["color"][1] * fade_in_ratio + COLOR_RED[1] * fade_out_ratio)
-                    b = int(group["color"][2] * fade_in_ratio + COLOR_RED[2] * fade_out_ratio)
-                    pixels[j] = (r, g, b)
-
-            # Apply changes to the strip
-            pixels.show()
-            time.sleep(interval)
-
-
-def fade_to_white(collections, steps=50, interval=0.05):
-    """Fade LEDs from collection colors to white."""
-    logger.info(f"Fading LEDs to white for collections: {collections}")
-
-    # Determine collection colors
-    garbage_color = COLOR_PURPLE if "garbage" in collections else COLOR_WHITE
-    organics_color = COLOR_GREEN if "organics" in collections else COLOR_WHITE
-    recycling_color = COLOR_BLUE if "recycling" in collections else COLOR_WHITE
-
-    # Define the groups and their colors
-    groups = [
-        {"start": 0, "end": 8, "color": garbage_color},
-        {"start": 8, "end": 16, "color": organics_color},
-        {"start": 16, "end": 24, "color": recycling_color},
-        {"start": 24, "end": 32, "color": recycling_color},  # Mimics 3rd group
-        {"start": 32, "end": 40, "color": organics_color},  # Mimics 2nd group
-        {"start": 40, "end": 48, "color": garbage_color},  # Mimics 1st group
-    ]
-
-    # Fade from collection colors to white
-    for step in range(steps + 1):
-        fade_in_ratio = step / steps
-        fade_out_ratio = 1 - fade_in_ratio
-
+    while True:  # Infinite cycle
         for group in groups:
-            for j in range(group["start"], group["end"]):
-                r = int(group["color"][0] * fade_out_ratio + COLOR_WHITE[0] * fade_in_ratio)
-                g = int(group["color"][1] * fade_out_ratio + COLOR_WHITE[1] * fade_in_ratio)
-                b = int(group["color"][2] * fade_out_ratio + COLOR_WHITE[2] * fade_in_ratio)
-                pixels[j] = (r, g, b)
+            # Perform fade to the target color for the current group
+            for step in range(steps + 1):
+                fade_in_ratio = step / steps  # Ratio for target color
+                fade_out_ratio = 1 - fade_in_ratio  # Ratio for the group's color
 
-        # Apply changes to the strip
-        pixels.show()
-        time.sleep(interval)
+                # Fade the LEDs for this group
+                for j in range(group["start"], group["end"]):
+                    r = int(group["color"][0] * fade_out_ratio + target_color[0] * fade_in_ratio)
+                    g = int(group["color"][1] * fade_out_ratio + target_color[1] * fade_in_ratio)
+                    b = int(group["color"][2] * fade_out_ratio + target_color[2] * fade_in_ratio)
+                    pixels[j] = (r, g, b)
+
+                # Apply changes to the strip
+                pixels.show()
+                time.sleep(interval)
+
+            # Hold the group fully in the target color for a moment
+            for j in range(group["start"], group["end"]):
+                pixels[j] = target_color
+            pixels.show()
+            time.sleep(interval * 10)
 
 
 def update_leds_today():
@@ -172,7 +126,7 @@ def update_leds_today():
                     next_date = datetime.strptime(next_schedule["date"], "%Y-%m-%d").date()
                     if next_date == tomorrow and len(next_schedule["collections"]) > 0:
                         logger.info(f"Holiday today with collection tomorrow: {next_schedule['collections']}")
-                        fade_red_with_collections(next_schedule["collections"])  # Fade between red and collection colors
+                        fade_to_color(next_schedule["collections"], COLOR_RED, steps=100, interval=0.02)  # Cycle and fade to red
                         return
 
                 # No collection tomorrow, just show solid red
@@ -183,13 +137,13 @@ def update_leds_today():
             # Case 2: Today's collections
             if date_obj == today and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_to_white(daily_schedule["collections"], steps=100, interval=0.02)  # Fade to white
+                fade_to_color(daily_schedule["collections"], COLOR_WHITE, steps=100, interval=0.02)  # Cycle and fade to white
                 today_or_tomorrow_handled = True
 
             # Case 3: Tomorrow's collections (no holiday logic)
             elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_to_white(daily_schedule["collections"], steps=100, interval=0.02)  # Fade to white
+                fade_to_color(daily_schedule["collections"], COLOR_WHITE, steps=100, interval=0.02)  # Cycle and fade to white
                 today_or_tomorrow_handled = True
 
             # Case 4: Future collections (after today and tomorrow)
