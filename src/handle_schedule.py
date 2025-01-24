@@ -4,10 +4,14 @@
 
 import json
 from pathlib import Path
+import logging
 
 # ----------------------------
-# Constants
+# Configuration and Constants
 # ----------------------------
+
+# Logger configuration
+logger = logging.getLogger(__name__)
 
 SCHEDULE_FILE = Path("collection_schedule.json")  # Path to the schedule file
 
@@ -22,6 +26,7 @@ def save_schedule(data):
     Args:
         data (dict): The collection schedule data to save.
     """
+    logger.info('SAVING DATA', data)
     with open(SCHEDULE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
