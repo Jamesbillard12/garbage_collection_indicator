@@ -84,7 +84,8 @@ def turn_off_leds():
     Turns off all LEDs and ensures it's done on program exit.
     """
     logger.info("Turning off LEDs.")
-    animation_manager.set_animation('')
+    pixels.fill(COLOR_OFF)
+    pixels.show()
 
 # Register the function to run on exit
 atexit.register(turn_off_leds)
@@ -143,7 +144,7 @@ def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
         pixels.show()
         time.sleep(blink_interval)
 
-    turn_off_leds()
+    animation_manager.set_animation('')
 
 
 def set_leds(garbage_on, organics_on, recycling_on):
