@@ -155,7 +155,7 @@ def set_holiday_lights():
     pixels.fill(COLOR_HOLIDAY)
     pixels.show()
 
-def fade_to_color():
+def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
 
     try:
         while True:  # Infinite cycle
@@ -164,13 +164,6 @@ def fade_to_color():
                 return
             if not params or "fade_state" not in params:
                 return
-
-            fade_state = params["fade_state"]
-            collections = fade_state["collections"]
-            BASE_COLOR = fade_state["base_color"]
-            steps = fade_state["steps"]
-            interval = fade_state["interval"]
-            hold_time =5
 
             """
                 Start at the base color, fade each group to its collection color, then fade all back to the base color.
@@ -370,7 +363,12 @@ def run_animations():
                     "interval": 0.02
                 }
             )
-            fade_to_color()
+            fade_to_color(
+                fade_state["collections"],
+                fade_state["base_color"],
+                fade_state["steps"],
+                fade_state["interval"]
+            )
         else:
             turn_off_leds()
 
