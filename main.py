@@ -1,11 +1,22 @@
+# ----------------------------
+# Imports
+# ----------------------------
+
+# Standard library imports
 import logging
 import time
 from datetime import datetime, timedelta
+import threading
+import atexit
+
+# Local imports
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
 from src.led_configuration import update_leds_today_thread, animation_manager
-import threading
-import atexit
+
+# ----------------------------
+# Configuration
+# ----------------------------
 
 # Configure logging
 logging.basicConfig(
@@ -14,25 +25,48 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Ensure LEDs are turned off and resources are cleaned up on exit
+# ----------------------------
+# Cleanup and Resource Management
+# ----------------------------
+
 def cleanup_resources():
+    """
+    Ensure LEDs are turned off and resources are cleaned up on program exit.
+    """
     try:
         logger.info("Cleaning up resources on exit...")
         animation_manager.set_animation('')
     except Exception as e:
         logger.error(f"Failed to clean up resources: {e}")
 
+# Register cleanup function to run on exit
 atexit.register(cleanup_resources)
 
+# ----------------------------
+# Utility Functions
+# ----------------------------
+
 def is_beginning_or_end_of_month():
-    """Check if today is the beginning or end of the month."""
+    """
+    Check if today is the beginning or end of the month.
+    Returns:
+        bool: True if today is the first or last day of the month.
+    """
     today = datetime.now().date()
     first_day = today.replace(day=1)
     last_day = (first_day + timedelta(days=31)).replace(day=1) - timedelta(days=1)
     return today == first_day or today == last_day
 
 def has_valid_collections(collections):
-    """Check if the collections data contains any non-empty collections."""
+    """
+    Check if the collections data contains any non-empty collections.
+
+    Args:
+        collections (dict): The collections data.
+
+    Returns:
+        bool: True if there is at least one valid collection.
+    """
     logger.debug("Validating collections...")
     for week_key, daily_schedules in collections.items():
         for daily_schedule in daily_schedules:
@@ -41,17 +75,24 @@ def has_valid_collections(collections):
                 return True
     return False  # No valid collections found
 
+# ----------------------------
+# Main Functions
+# ----------------------------
+
 def fetch_or_load_and_update_leds(force_fetch=False):
     """
-    Load the schedule or fetch new data if:
+    Load the schedule or fetch new data if necessary and update LEDs.
+
+    Conditions for fetching new data:
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     - force_fetch is True.
+    Args:
+        force_fetch (bool): Whether to force a fetch of new data.
     """
-    animation_manager.set_animation('pulsate_white')
-
     try:
         logger.info("Starting pulsating white effect while processing data...")
+        animation_manager.set_animation('pulsate_white')
 
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
@@ -65,7 +106,6 @@ def fetch_or_load_and_update_leds(force_fetch=False):
         # Validate the data (loaded or fetched)
         if has_valid_collections(collections):
             logger.info("Valid collections found. Updating LEDs...")
-
             update_leds_today_thread.start()
         else:
             logger.warning("No valid collections found. Re-fetching data...")
@@ -87,6 +127,10 @@ def fetch_or_load_and_update_leds(force_fetch=False):
 def schedule_daily_run(hour=6, minute=0):
     """
     Schedule the process to run daily at a specific time.
+
+    Args:
+        hour (int): The hour (24-hour format) at which to run the process.
+        minute (int): The minute at which to run the process.
     """
     def run_at_scheduled_time():
         while True:
@@ -117,6 +161,10 @@ def run_startup_process():
     """
     startup_thread = threading.Thread(target=fetch_or_load_and_update_leds, args=(True,), daemon=True)
     startup_thread.start()
+
+# ----------------------------
+# Main Execution
+# ----------------------------
 
 if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
