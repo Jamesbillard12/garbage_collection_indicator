@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import threading
 import atexit
 
-from src.get_collection_information import scrape_calenda
+from src.get_collection_information import scrape_calendar
 from src.handle_schedule import save_schedule, load_schedule
 from src.led_configuration import update_leds_today, animation_manager
 
@@ -95,7 +95,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
             logger.info("Fetching new collection data...")
-            collections = scrape_calenda()
+            collections = scrape_calendar()
             save_schedule(collections)
         else:
             logger.info("Loading existing schedule data...")
@@ -107,7 +107,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
             update_leds_today()
         else:
             logger.warning("No valid collections found. Re-fetching data...")
-            collections = scrape_calenda()
+            collections = scrape_calendar()
             save_schedule(collections)
 
             # Validate again after re-fetching
