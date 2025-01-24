@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today, blink_red_and_turn_off, turn_off_leds, pulsate_white
+from src.led_configuration import update_leds_today_thread, animation_manager
 import threading
 import atexit
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def cleanup_resources():
     try:
         logger.info("Cleaning up resources on exit...")
-        turn_off_leds()
+        animation_manager.set_animation('')
     except Exception as e:
         logger.error(f"Failed to clean up resources: {e}")
 
@@ -47,14 +47,10 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     - force_fetch is True.
-    Pulsates white while processing.
     """
-    # stop_event = threading.Event()
-    # pulsate_thread = threading.Thread(target=pulsate_white, args=(50, 0.05, stop_event), daemon=True)
 
     try:
         logger.info("Starting pulsating white effect while processing data...")
-        # pulsate_thread.start()
 
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
@@ -68,7 +64,8 @@ def fetch_or_load_and_update_leds(force_fetch=False):
         # Validate the data (loaded or fetched)
         if has_valid_collections(collections):
             logger.info("Valid collections found. Updating LEDs...")
-            update_leds_today()
+
+            update_leds_today_thread.start()
         else:
             logger.warning("No valid collections found. Re-fetching data...")
             collections = scrape_with_playwright()
@@ -77,21 +74,14 @@ def fetch_or_load_and_update_leds(force_fetch=False):
             # Validate again after re-fetching
             if has_valid_collections(collections):
                 logger.info("Valid collections found after re-fetching. Updating LEDs...")
-                update_leds_today()
+                update_leds_today_thread.start()
             else:
                 logger.error("No valid collections found even after re-fetching. Turning off LEDs as a fallback.")
-                blink_red_and_turn_off()
+                animation_manager.set_animation('blink_red_and_turn_off')
+
     except Exception as e:
         logger.error(f"Failed to load, fetch, or update LEDs: {e}")
-        blink_red_and_turn_off()  # Turn off LEDs on failure
-    # finally:
-    #     # Signal the stop event and wait for the pulsating thread to finish
-    #     if stop_event:
-    #         logger.info("Stopping pulsating white effect.")
-    #         stop_event.set()
-    #     if pulsate_thread.is_alive():
-    #         pulsate_thread.join()  # Ensure the thread stops before proceeding
-    #     logger.info("Processing complete.")
+        animation_manager.set_animation('blink_red_and_turn_off')  # Turn off LEDs on failure
 
 def schedule_daily_run(hour=6, minute=0):
     """
@@ -129,7 +119,7 @@ def run_startup_process():
 
 if __name__ == "__main__":
     logger.info("Starting Garbage Collection Indicator...")
-    turn_off_leds()
+    animation_manager.set_animation('')
 
     # Run the fetch and update process immediately on startup
     logger.info("Running startup process...")

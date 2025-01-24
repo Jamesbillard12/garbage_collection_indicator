@@ -1,3 +1,5 @@
+from symtable import Class
+
 import neopixel
 import board
 import time
@@ -6,6 +8,7 @@ from datetime import datetime, timedelta
 import atexit
 import logging
 import json
+from threading import Thread, Lock
 
 def format_schedule(schedule):
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
@@ -28,6 +31,35 @@ COLOR_OFF = (0, 0, 0)
 
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
+
+# animation_state = {"name": "", "params": {
+#     "garbage_on": False,
+#     "organics_on": False,
+#     "recycling_on": False,
+#     "collections": {},
+#     "base_color": '',
+#     "steps": 0,
+#     "interval": 0
+# }}
+
+class AnimationManager:
+    def __init__(self):
+        self.lock = Lock()
+        self.current_animation = ''
+        self.params = {}
+
+    def set_animation(self, name, params=None):
+        """function to switch the current animation"""
+        with self.lock:
+            self.current_animation = name
+            self.params = params if params else {}
+
+    def get_animation(self):
+        """function to get the current animation"""
+        with self.lock:
+            return self.current_animation, self.params
+
+animation_manager = AnimationManager()
 
 # Ensure LEDs are turned off when the program exits
 def turn_off_leds():
@@ -52,6 +84,10 @@ def pulsate_white(steps=50, interval=0.05, stop_event=None):
     try:
         while not stop_event.is_set():  # Continue until the stop_event is set
             # Fade in: Gradually increase brightness to white
+            current, params = animation_manager.get_animation()
+            if current != 'pulsate_white':
+                return
+
             for step in range(steps + 1):
                 if stop_event.is_set():
                     break  # Exit loop if stop_event is set
@@ -88,6 +124,9 @@ def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
 
     # Blink red
     for _ in range(blink_count):
+        current, params = animation_manager.get_animation()
+        if current != 'blink_red_and_turn_off':
+            return
         # Turn all LEDs red
         pixels.fill(COLOR_RED)
         pixels.show()
@@ -133,26 +172,40 @@ def set_holiday_lights():
     pixels.fill(COLOR_HOLIDAY)
     pixels.show()
 
-def fade_to_color(collections, BASE_COLOR, steps=50, interval=0.05, hold_time=5):
-    """
-    Start at the base color, fade each group to its collection color, then fade all back to the base color.
-    """
-    logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back to {BASE_COLOR}.")
-
-    # Determine collection colors
-    garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
-    organics_color = COLOR_ORGANIC if "organics" in collections else COLOR_NO
-    recycling_color = COLOR_RECYCLING if "recycling" in collections else COLOR_NO
-
-    # Define the paired groups and their colors
-    paired_groups = [
-        {"groups": [0, 40], "color": garbage_color},  # Group 1 and 6
-        {"groups": [8, 32], "color": organics_color},  # Group 2 and 5
-        {"groups": [16, 24], "color": recycling_color},  # Group 3 and 4
-    ]
+def fade_to_color():
 
     try:
         while True:  # Infinite cycle
+            current, params = animation_manager.get_animation()
+            if current != 'fade_to_color':
+                return
+            if not params or "fade_state" not in params:
+                return
+
+            fade_state = params.fade_state
+            collections = fade_state.collections
+            BASE_COLOR = fade_state.base_color
+            steps = fade_state.steps
+            interval = fade_state.interval
+            hold_time =5
+
+            """
+                Start at the base color, fade each group to its collection color, then fade all back to the base color.
+                """
+            logger.info(
+                f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back to {BASE_COLOR}.")
+
+            # Determine collection colors
+            garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
+            organics_color = COLOR_ORGANIC if "organics" in collections else COLOR_NO
+            recycling_color = COLOR_RECYCLING if "recycling" in collections else COLOR_NO
+
+            # Define the paired groups and their colors
+            paired_groups = [
+                {"groups": [0, 40], "color": garbage_color},  # Group 1 and 6
+                {"groups": [8, 32], "color": organics_color},  # Group 2 and 5
+                {"groups": [16, 24], "color": recycling_color},  # Group 3 and 4
+            ]
             # Step 1: Start with all LEDs set to the base color
             pixels.fill(BASE_COLOR)
             pixels.show()
@@ -227,24 +280,54 @@ def update_leds_today():
                     next_date = datetime.strptime(next_schedule["date"], "%Y-%m-%d").date()
                     if next_date == tomorrow and len(next_schedule["collections"]) > 0:
                         logger.info(f"Holiday today with collection tomorrow: {next_schedule['collections']}")
-                        fade_to_color(next_schedule["collections"], COLOR_HOLIDAY, steps=100, interval=0.02)  # Cycle and fade to holiday color
+                        animation_manager.set_animation(
+                            'fade_to_color',
+                            {
+                                "fade_state": {
+                                    "collections": next_schedule["collections"],
+                                     "base_color": COLOR_HOLIDAY,
+                                     "steps": 100,
+                                     "interval": 0.02
+                                }
+                            }
+                        )
                         return
 
                 # No collection tomorrow, just show solid red
                 logger.info(f"Holiday today with no collection tomorrow. Setting solid red.")
-                set_holiday_lights()
+                animation_manager.set_animation("set_holiday_lights", {})
                 return
 
             # Case 2: Today's collections
             if date_obj == today and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_to_color(daily_schedule["collections"], COLOR_WHITE, steps=100, interval=0.02)  # Cycle and fade to white
+                animation_manager.set_animation(
+                    'fade_to_color',
+                    {
+                        "fade_state": {
+                            "collections": daily_schedule["collections"],
+                            "base_color": COLOR_WHITE,
+                            "steps": 100,
+                            "interval": 0.02
+                        }
+                    }
+                ) # Cycle and fade to white
                 today_or_tomorrow_handled = True
 
             # Case 3: Tomorrow's collections (no holiday logic)
             elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
-                fade_to_color(daily_schedule["collections"], COLOR_WHITE, steps=100, interval=0.02)  # Cycle and fade to white
+                animation_manager.set_animation(
+                    'fade_to_color',
+                    {
+                        "fade_state": {
+                            "collections": daily_schedule["collections"],
+                            "base_color": COLOR_WHITE,
+                            "steps": 100,
+                            "interval": 0.02
+                        }
+                    }
+                )  # Cycle and fade to white
                 today_or_tomorrow_handled = True
 
             # Case 4: Future collections (after today and tomorrow)
@@ -259,11 +342,60 @@ def update_leds_today():
     # Case 5: No today/tomorrow collections, show the first future collection
     if not today_or_tomorrow_handled and upcoming_collection:
         logger.info(f"Setting LEDs for the first upcoming collection: {upcoming_collection}")
-        set_leds(
-            "garbage" in upcoming_collection,
-            "organics" in upcoming_collection,
-            "recycling" in upcoming_collection,
-        )
+        animation_manager.set_animation('set_leds', {
+            "collection_state": {
+                "garbage_on": "garbage" in upcoming_collection,
+                 "organics_on": "organics" in upcoming_collection,
+                 "recycling_on": "recycling" in upcoming_collection
+            }
+        })
     elif not today_or_tomorrow_handled:
         # Case 6: No collections at all
         logger.info("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
+
+def run_animations():
+    """main loop to manage animations"""
+    while True:
+        name, params = animation_manager.get_animation()
+        if name == 'pulsate_white':
+            pulsate_white()
+        elif name == 'blink_red_and_turn_off':
+            blink_red_and_turn_off()
+        elif name == 'set_leds':
+            collection_state = params.get(
+                'collection_state',
+                {
+                    "garbage_on": False,
+                    "organics_on": False,
+                    "recycling_on": False,
+                })
+            set_leds(
+                collection_state["garbage_on"],
+                collection_state["organics_on"],
+                collection_state["recycling_on"]
+            )
+        elif name == "set_holiday_lights":
+            set_holiday_lights()
+        elif name == "fade_to_color":
+            fade_state = params.get(
+                'fade_state',
+                {
+                    "collections": [],
+                    "base_color": (255, 255, 255),
+                    "steps": 100,
+                    "interval": 0.02
+                }
+            )
+            fade_to_color(
+                fade_state["collections"],
+                fade_state["base_color"],
+                fade_state["steps"],
+                fade_state["interval"]
+            )
+        else:
+            turn_off_leds()
+
+animation_thread = Thread(target=run_animations, daemon=True)
+animation_thread.start()
+
+update_leds_today_thread = Thread(target=update_leds_today, daemon=True)
