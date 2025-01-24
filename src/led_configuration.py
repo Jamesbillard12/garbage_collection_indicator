@@ -40,8 +40,8 @@ class AnimationManager:
 
     def set_animation(self, name, params=None):
         """function to switch the current animation"""
+        logger.info('CURRENT_ANIMATION:', name, "PARAMS:", params)
         with self.lock:
-            logger.info('CURRENT_ANIMATION:', name, "PARAMS:", params)
             self.current_animation = name
             self.params = params if params else {}
 
