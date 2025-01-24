@@ -9,6 +9,7 @@ import atexit
 import logging
 import json
 from threading import Thread, Lock
+import math
 
 def format_schedule(schedule):
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
@@ -79,15 +80,16 @@ def pulsate_white(steps=50, interval=0.05):
                 return
 
             for step in range(steps + 1):
-                brightness = max(step / steps, 0.2)
+                # Use a sinusoidal function for smooth fading
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
 
-            # Fade out: Gradually decrease brightness to off
+            # Fade out: Gradually decrease brightness
             for step in range(steps, -1, -1):
-                brightness = max(step / steps, 0.2)
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
