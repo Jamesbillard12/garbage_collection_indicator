@@ -1,3 +1,7 @@
+# ----------------------------
+# Imports
+# ----------------------------
+
 import atexit
 import json
 import logging
@@ -10,6 +14,10 @@ import board
 import neopixel
 
 from src.handle_schedule import load_schedule
+
+# ----------------------------
+# Configuration and Constants
+# ----------------------------
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -32,46 +40,79 @@ COLOR_OFF = (0, 0, 0)
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
+# ----------------------------
+# Utility Functions
+# ----------------------------
 
-# Utility functions
 def format_schedule(schedule):
+    """
+    Format the schedule as a JSON string.
+
+    Args:
+        schedule (dict): Schedule data.
+
+    Returns:
+        str: Formatted schedule string.
+    """
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
 
 
-# Animation manager class
+def turn_off_leds():
+    """
+    Turn off all LEDs by setting their color to off.
+    """
+    logger.info("Turning off LEDs.")
+    pixels.fill(COLOR_OFF)
+    pixels.show()
+
+
+# Ensure LEDs are turned off when the program exits
+atexit.register(turn_off_leds)
+
+# ----------------------------
+# Animation Manager Class
+# ----------------------------
+
 class AnimationManager:
+    """
+    Manages the current LED animation and its parameters.
+    """
     def __init__(self):
         self.lock = Lock()
         self.current_animation = ''
         self.params = {}
 
     def set_animation(self, name, params=None):
-        """Function to switch the current animation."""
+        """
+        Set the current animation.
+
+        Args:
+            name (str): Name of the animation.
+            params (dict): Parameters for the animation.
+        """
         logger.info(f'CURRENT_ANIMATION: {name}, PARAMS: {params}')
         with self.lock:
             self.current_animation = name
             self.params = params if params else {}
 
     def get_animation(self):
-        """Function to get the current animation."""
+        """
+        Get the current animation and its parameters.
+
+        Returns:
+            tuple: Current animation name and parameters.
+        """
         with self.lock:
             return self.current_animation, self.params
 
 
+# Initialize animation manager
 animation_manager = AnimationManager()
 
-# Ensure LEDs are turned off when the program exits
-def turn_off_leds():
-    logger.info("Turning off LEDs.")
-    pixels.fill(COLOR_OFF)
-    pixels.show()
+# ----------------------------
+# Animation Functions
+# ----------------------------
 
-
-# Register the turn_off_leds function to run on exit
-atexit.register(turn_off_leds)
-
-
-# Animation functions
 def pulsate_white(steps=50, interval=0.05):
     """
     Make the LEDs pulsate white with a smooth breathing effect.
@@ -83,6 +124,7 @@ def pulsate_white(steps=50, interval=0.05):
             if current != 'pulsate_white':
                 return
 
+            # Fade in and fade out
             for step in range(steps + 1):
                 brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))
                 white = (int(255 * brightness),) * 3
@@ -102,7 +144,7 @@ def pulsate_white(steps=50, interval=0.05):
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
     """
-    Make all LEDs blink red a specified number of times and then shut off.
+    Make all LEDs blink red a specified number of times and then turn them off.
     """
     logger.info(f"Blinking all LEDs red {blink_count} times, then turning them off.")
     for _ in range(blink_count):
@@ -153,6 +195,13 @@ def set_holiday_lights():
 def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
     """
     Fade LEDs between base color and collection colors.
+
+    Args:
+        collections (list): Types of collections (e.g., garbage, recycling).
+        BASE_COLOR (tuple): RGB color to fade to.
+        steps (int): Number of steps for fading. Default is 100.
+        interval (float): Time between each step. Default is 0.02 seconds.
+        hold_time (int): Duration to hold the collection colors. Default is 5 seconds.
     """
     try:
         while True:
@@ -210,8 +259,11 @@ def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5
                 time.sleep(interval)
     except KeyboardInterrupt:
         logger.info("Fade to color interrupted. Turning off LEDs.")
-        turn_off_leds()
+        animation_manager.set_animation('')
 
+# ----------------------------
+# Schedule Functions
+# ----------------------------
 
 def update_leds_today():
     """
@@ -228,12 +280,13 @@ def update_leds_today():
         for daily_schedule in daily_schedules:
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 
+            # Case 1: Holiday today
             if "holiday" in daily_schedule["collections"] and date_obj == today:
-                logger.info(f"Holiday detected on {date_obj}.")
+                logger.info(f"Holiday detected on {date_obj}. Checking tomorrow's collections...")
                 for next_schedule in daily_schedules:
                     next_date = datetime.strptime(next_schedule["date"], "%Y-%m-%d").date()
                     if next_date == tomorrow and len(next_schedule["collections"]) > 0:
-                        logger.info(f"Holiday today with collection tomorrow: {next_schedule['collections']}")
+                        logger.info(f"Holiday today, collections tomorrow: {next_schedule['collections']}")
                         animation_manager.set_animation(
                             'fade_to_color',
                             {
@@ -247,10 +300,11 @@ def update_leds_today():
                         )
                         return
 
-                logger.info(f"Holiday today with no collection tomorrow. Setting solid red.")
+                logger.info("Holiday today with no collections tomorrow. Setting holiday lights.")
                 animation_manager.set_animation("set_holiday_lights", {})
                 return
 
+            # Case 2: Collections today
             if date_obj == today and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
                 animation_manager.set_animation(
@@ -266,6 +320,7 @@ def update_leds_today():
                 )
                 today_or_tomorrow_handled = True
 
+            # Case 3: Collections tomorrow
             elif date_obj == tomorrow and len(daily_schedule["collections"]) > 0:
                 logger.info(f"Tomorrow's collections ({date_obj}): {daily_schedule['collections']}")
                 animation_manager.set_animation(
@@ -281,6 +336,7 @@ def update_leds_today():
                 )
                 today_or_tomorrow_handled = True
 
+            # Case 4: First upcoming collection
             elif date_obj > tomorrow and len(daily_schedule["collections"]) > 0 and upcoming_collection is None:
                 upcoming_collection = daily_schedule["collections"]
                 logger.info(f"First upcoming collection after tomorrow: {upcoming_collection}")
@@ -289,21 +345,31 @@ def update_leds_today():
         if upcoming_collection:
             break
 
+    # Case 5: No collections today/tomorrow, show future collection
     if not today_or_tomorrow_handled and upcoming_collection:
         logger.info(f"Setting LEDs for the first upcoming collection: {upcoming_collection}")
-        animation_manager.set_animation('set_leds', {
-            "collection_state": {
-                "garbage_on": "garbage" in upcoming_collection,
-                "organics_on": "organics" in upcoming_collection,
-                "recycling_on": "recycling" in upcoming_collection,
+        animation_manager.set_animation(
+            'set_leds',
+            {
+                "collection_state": {
+                    "garbage_on": "garbage" in upcoming_collection,
+                    "organics_on": "organics" in upcoming_collection,
+                    "recycling_on": "recycling" in upcoming_collection,
+                }
             }
-        })
+        )
     elif not today_or_tomorrow_handled:
-        logger.info("No collections found for today, tomorrow, or the rest of the week. Keeping LEDs as-is.")
+        # Case 6: No collections at all
+        logger.info("No collections found for today, tomorrow, or the rest of the week. Turning off LEDs.")
 
+# ----------------------------
+# Main Animation Loop
+# ----------------------------
 
 def run_animations():
-    """Main loop to manage animations."""
+    """
+    Main loop to manage animations.
+    """
     while True:
         name, params = animation_manager.get_animation()
         if name == 'pulsate_white':
@@ -313,11 +379,7 @@ def run_animations():
         elif name == 'set_leds':
             collection_state = params.get(
                 'collection_state',
-                {
-                    "garbage_on": False,
-                    "organics_on": False,
-                    "recycling_on": False,
-                }
+                {"garbage_on": False, "organics_on": False, "recycling_on": False},
             )
             set_leds(
                 collection_state["garbage_on"],
@@ -345,9 +407,14 @@ def run_animations():
         else:
             turn_off_leds()
 
+# ----------------------------
+# Threads and Startup
+# ----------------------------
 
-# Start animation and schedule update threads
+# Start animation thread
 animation_thread = Thread(target=run_animations, daemon=True)
 animation_thread.start()
 
+# Start update LEDs thread
 update_leds_today_thread = Thread(target=update_leds_today, daemon=True)
+update_leds_today_thread.start()
