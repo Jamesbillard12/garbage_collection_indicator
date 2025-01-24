@@ -32,16 +32,6 @@ COLOR_OFF = (0, 0, 0)
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
-# animation_state = {"name": "", "params": {
-#     "garbage_on": False,
-#     "organics_on": False,
-#     "recycling_on": False,
-#     "collections": {},
-#     "base_color": '',
-#     "steps": 0,
-#     "interval": 0
-# }}
-
 class AnimationManager:
     def __init__(self):
         self.lock = Lock()
@@ -291,7 +281,7 @@ def update_leds_today():
                 return
 
             # Case 2: Today's collections
-            if date_obj == today and len(daily_schedule["collections"]) > 0:
+            if True:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
                 animation_manager.set_animation(
                     'fade_to_color',
