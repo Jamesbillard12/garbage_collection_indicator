@@ -12,7 +12,7 @@ import atexit
 # Local imports
 from src.get_collection_information import scrape_with_playwright
 from src.handle_schedule import save_schedule, load_schedule
-from src.led_configuration import update_leds_today_thread, animation_manager
+from src.led_configuration import update_leds_today, animation_manager
 
 # ----------------------------
 # Configuration
@@ -106,7 +106,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
         # Validate the data (loaded or fetched)
         if has_valid_collections(collections):
             logger.info("Valid collections found. Updating LEDs...")
-            update_leds_today_thread.start()
+            update_leds_today()
         else:
             logger.warning("No valid collections found. Re-fetching data...")
             collections = scrape_with_playwright()
@@ -115,7 +115,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
             # Validate again after re-fetching
             if has_valid_collections(collections):
                 logger.info("Valid collections found after re-fetching. Updating LEDs...")
-                update_leds_today_thread.start()
+                update_leds_today()
             else:
                 logger.error("No valid collections found even after re-fetching. Turning off LEDs as a fallback.")
                 animation_manager.set_animation('blink_red_and_turn_off')
