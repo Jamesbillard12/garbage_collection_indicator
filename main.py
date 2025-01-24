@@ -48,6 +48,7 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     - No valid data is found in the loaded schedule.
     - force_fetch is True.
     """
+    animation_manager.set_animation('pulsate_white')
 
     try:
         logger.info("Starting pulsating white effect while processing data...")

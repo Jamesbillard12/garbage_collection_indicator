@@ -9,6 +9,7 @@ import atexit
 import logging
 import json
 from threading import Thread, Lock
+import math
 
 def format_schedule(schedule):
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
@@ -32,16 +33,6 @@ COLOR_OFF = (0, 0, 0)
 # Set up the LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
-# animation_state = {"name": "", "params": {
-#     "garbage_on": False,
-#     "organics_on": False,
-#     "recycling_on": False,
-#     "collections": {},
-#     "base_color": '',
-#     "steps": 0,
-#     "interval": 0
-# }}
-
 class AnimationManager:
     def __init__(self):
         self.lock = Lock()
@@ -50,6 +41,7 @@ class AnimationManager:
 
     def set_animation(self, name, params=None):
         """function to switch the current animation"""
+        logger.info(f'CURRENT_ANIMATION: {name}, PARAMS: {params}')
         with self.lock:
             self.current_animation = name
             self.params = params if params else {}
@@ -70,47 +62,40 @@ def turn_off_leds():
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
 
-def pulsate_white(steps=50, interval=0.05, stop_event=None):
+def pulsate_white(steps=50, interval=0.05):
     """
-    Make the LEDs pulsate white with a smooth breathing effect, stopping when the stop_event is set.
+    Make the LEDs pulsate white with a smooth breathing effect.
 
     Args:
         steps (int): The number of steps for the fade-in and fade-out. Default is 50.
         interval (float): The time (in seconds) between each brightness step. Default is 0.05.
-        stop_event (threading.Event): Event to signal when to stop the pulsating effect.
     """
     logger.info("Starting pulsating white effect.")
 
     try:
-        while not stop_event.is_set():  # Continue until the stop_event is set
+        while True:  # Continue until the stop_event is set
             # Fade in: Gradually increase brightness to white
             current, params = animation_manager.get_animation()
             if current != 'pulsate_white':
                 return
 
             for step in range(steps + 1):
-                if stop_event.is_set():
-                    break  # Exit loop if stop_event is set
-                brightness = step / steps
+                # Use a sinusoidal function for smooth fading
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
 
-            # Fade out: Gradually decrease brightness to off
+            # Fade out: Gradually decrease brightness
             for step in range(steps, -1, -1):
-                if stop_event.is_set():
-                    break  # Exit loop if stop_event is set
-                brightness = step / steps
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
     except Exception as e:
         logger.error(f"Pulsating white effect failed: {e}")
-    finally:
-        logger.info("Pulsating white effect stopped.")
-        turn_off_leds()
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
     """
@@ -172,7 +157,7 @@ def set_holiday_lights():
     pixels.fill(COLOR_HOLIDAY)
     pixels.show()
 
-def fade_to_color():
+def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
 
     try:
         while True:  # Infinite cycle
@@ -181,13 +166,6 @@ def fade_to_color():
                 return
             if not params or "fade_state" not in params:
                 return
-
-            fade_state = params.fade_state
-            collections = fade_state.collections
-            BASE_COLOR = fade_state.base_color
-            steps = fade_state.steps
-            interval = fade_state.interval
-            hold_time =5
 
             """
                 Start at the base color, fade each group to its collection color, then fade all back to the base color.
