@@ -165,7 +165,7 @@ def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5
             if not params or "fade_state" not in params:
                 return
 
-            fade_state = params.fade_state
+            fade_state = params["fade_state"]
             collections = fade_state.collections
             BASE_COLOR = fade_state.base_color
             steps = fade_state.steps
