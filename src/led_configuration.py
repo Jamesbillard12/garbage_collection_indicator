@@ -283,7 +283,7 @@ def update_leds_today():
 
             # Case 2: Today's collections
             # if date_obj == today and len(daily_schedule["collections"]) > 0:
-              if len(daily_schedule["collections"]) > 0:
+            if len(daily_schedule["collections"]) > 0:
                 logger.info(f"Today's collections ({date_obj}): {daily_schedule['collections']}")
                 animation_manager.set_animation(
                     'fade_to_color',
