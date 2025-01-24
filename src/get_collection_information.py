@@ -1,31 +1,32 @@
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-import re
 import os
+import re
 from datetime import datetime, timedelta
 
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
+
+# Load environment variables
 load_dotenv()
+
 
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
     address = os.environ["address"]
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # Use headless=True for headless mode
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
 
         # Open the Recology Shoreline Collection Calendar page
         page.goto(url)
 
-        # Wait for the address input field to load
+        # Wait for the address input field to load and enter the address
         page.wait_for_selector("#row-input-0")
-
-        # Enter the address
         page.fill("#row-input-0", address)
 
-        # Click the search button (it's an <a> tag)
+        # Click the search button
         page.click("#rCbtn-search")
 
         # Wait for the iframe to load after the search
