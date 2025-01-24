@@ -70,7 +70,7 @@ def turn_off_leds():
 # Register the turn_off_leds function to run on exit
 atexit.register(turn_off_leds)
 
-def pulsate_white(steps=50, interval=0.05, stop_event=None):
+def pulsate_white(steps=50, interval=0.05):
     """
     Make the LEDs pulsate white with a smooth breathing effect, stopping when the stop_event is set.
 
@@ -82,15 +82,13 @@ def pulsate_white(steps=50, interval=0.05, stop_event=None):
     logger.info("Starting pulsating white effect.")
 
     try:
-        while not stop_event.is_set():  # Continue until the stop_event is set
+        while True:  # Continue until the stop_event is set
             # Fade in: Gradually increase brightness to white
             current, params = animation_manager.get_animation()
             if current != 'pulsate_white':
                 return
 
             for step in range(steps + 1):
-                if stop_event.is_set():
-                    break  # Exit loop if stop_event is set
                 brightness = step / steps
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
@@ -99,8 +97,6 @@ def pulsate_white(steps=50, interval=0.05, stop_event=None):
 
             # Fade out: Gradually decrease brightness to off
             for step in range(steps, -1, -1):
-                if stop_event.is_set():
-                    break  # Exit loop if stop_event is set
                 brightness = step / steps
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
@@ -110,7 +106,7 @@ def pulsate_white(steps=50, interval=0.05, stop_event=None):
         logger.error(f"Pulsating white effect failed: {e}")
     finally:
         logger.info("Pulsating white effect stopped.")
-        turn_off_leds()
+        animation_manager.set_animation('')
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
     """
