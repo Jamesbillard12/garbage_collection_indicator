@@ -104,9 +104,6 @@ def pulsate_white(steps=50, interval=0.05):
                 time.sleep(interval)
     except Exception as e:
         logger.error(f"Pulsating white effect failed: {e}")
-    finally:
-        logger.info("Pulsating white effect stopped.")
-        animation_manager.set_animation('')
 
 def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
     """
