@@ -10,6 +10,8 @@ import math
 from datetime import datetime, timedelta
 from threading import Thread, Lock
 import atexit
+import math
+
 
 # Third-party imports
 import neopixel
@@ -43,6 +45,7 @@ COLOR_OFF = (0, 0, 0)
 # Initialize LED strip
 pixels = neopixel.NeoPixel(PIN, NUM_LEDS, brightness=BRIGHTNESS, auto_write=False)
 
+
 # ----------------------------
 # Classes
 # ----------------------------
@@ -58,6 +61,7 @@ class AnimationManager:
         self.params = {}
 
     def set_animation(self, name, params=None):
+        """function to switch the current animation"""
         logger.info(f'CURRENT_ANIMATION: {name}, PARAMS: {params}')
         with self.lock:
             self.current_animation = name
@@ -106,15 +110,17 @@ def pulsate_white(steps=50, interval=0.05):
                 return
 
             for step in range(steps + 1):
-                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))
-                white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))
+                # Use a sinusoidal function for smooth fading
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
+                white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
 
+            # Fade out: Gradually decrease brightness
             for step in range(steps, -1, -1):
-                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))
-                white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))
+                brightness = 0.2 + 0.8 * math.sin((math.pi / 2) * (step / steps))  # Range: 0.2 to 1.0
+                white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
                 time.sleep(interval)
@@ -160,7 +166,6 @@ def set_leds(garbage_on, organics_on, recycling_on):
         pixels[i + 40] = garbage_color
 
     pixels.show()
-
 
 def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
     """

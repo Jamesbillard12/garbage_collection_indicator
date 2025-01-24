@@ -87,12 +87,12 @@ def fetch_or_load_and_update_leds(force_fetch=False):
     - It's the beginning or end of the month.
     - No valid data is found in the loaded schedule.
     - force_fetch is True.
-
     Args:
         force_fetch (bool): Whether to force a fetch of new data.
     """
     try:
         logger.info("Starting pulsating white effect while processing data...")
+        animation_manager.set_animation('pulsate_white')
 
         # Decide whether to fetch or load based on conditions
         if force_fetch or is_beginning_or_end_of_month():
