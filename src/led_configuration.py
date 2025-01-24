@@ -88,7 +88,7 @@ def pulsate_white(steps=50, interval=0.05):
                 return
 
             for step in range(steps + 1):
-                brightness = step / steps
+                brightness = max(step / steps, 0.2)
                 white = (int(255 * brightness), int(255 * brightness), int(255 * brightness))  # Scale white color
                 pixels.fill(white)
                 pixels.show()
