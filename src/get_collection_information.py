@@ -132,11 +132,3 @@ class RecologyCalendarScraper:
         finally:
             if 'page' in locals():
                 page.context.browser.close()
-
-def main():
-    scraper = RecologyCalendarScraper()
-    collection_dates = scraper.scrape_calendar()
-    return collection_dates
-
-if __name__ == "__main__":
-    main()
