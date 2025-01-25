@@ -1,139 +1,130 @@
-import os
-import re
-from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import re
+import os
+from datetime import datetime, timedelta
+
+load_dotenv()
 
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
     address = os.environ["address"]
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True)  # Use headless=True for headless mode
         context = browser.new_context()
         page = context.new_page()
 
-        try:
-            _navigate_to_calendar_page(page, url, address)
-            iframe_content = _get_iframe_content(page)
+        # Open the Recology Shoreline Collection Calendar page
+        page.goto(url)
 
-            dates = _extract_calendar_dates(iframe_content)
-            events = _extract_collection_events(iframe_content)
-            _map_events_to_dates(events, dates)
-            weeks = _group_dates_into_weeks(dates)
+        # Wait for the address input field to load
+        page.wait_for_selector("#row-input-0")
 
-            _print_weeks(weeks)
-            return weeks
-        finally:
-            browser.close()
+        # Enter the address
+        page.fill("#row-input-0", address)
 
-def _navigate_to_calendar_page(page, url, address):
-    """Navigate to the collection calendar page and enter the address."""
-    page.goto(url)
-    page.wait_for_selector("#row-input-0")
-    page.fill("#row-input-0", address)
-    page.click("#rCbtn-search")
-    page.wait_for_selector("iframe#recollect-frame")
+        # Click the search button (it's an <a> tag)
+        page.click("#rCbtn-search")
 
-def _get_iframe_content(page):
-    """Retrieve the content of the iframe containing the calendar."""
-    iframe = page.frame(name="recollect")
-    if not iframe:
-        raise Exception("Iframe not found")
-    iframe.wait_for_selector("table.fc-border-separate")
-    return iframe.content()
+        # Wait for the iframe to load after the search
+        page.wait_for_selector("iframe#recollect-frame")
 
-def _extract_calendar_dates(content):
-    """Extract dates from the calendar table."""
-    soup = BeautifulSoup(content, "html.parser")
-    calendar_table = soup.find("table", class_="fc-border-separate")
-    if not calendar_table:
-        raise Exception("Calendar table not found")
+        # Switch to the iframe
+        iframe = page.frame(name="recollect")
+        if not iframe:
+            print("Iframe not found")
+            return
 
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-    dates = {}
+        # Wait for the calendar to load inside the iframe
+        iframe.wait_for_selector("table.fc-border-separate")
 
-    cells = calendar_table.find_all("td", {"data-date": True})
-    for cell in cells:
-        data_date = cell["data-date"]
-        date_obj = datetime.strptime(data_date, "%Y-%m-%d")
-        if date_obj.month == current_month and date_obj.year == current_year:
-            dates[data_date] = {"collections": []}
+        # Get the iframe content
+        content = iframe.content()
+        soup = BeautifulSoup(content, "html.parser")
 
-    return dates
+        # Locate the table with the class 'fc-border-separate'
+        calendar_table = soup.find("table", class_="fc-border-separate")
+        if not calendar_table:
+            print("Calendar table not found")
+            return
 
-def _extract_collection_events(content):
-    """Extract collection events from the iframe content."""
-    soup = BeautifulSoup(content, "html.parser")
-    event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
-    events = []
+        # Extract all table cells with data-date
+        dates = {}
+        cells = calendar_table.find_all("td", {"data-date": True})
+        current_month = datetime.now().month
+        current_year = datetime.now().year
 
-    for event in event_divs:
-        event_id = event.get("id")
-        event_type = event_id.split("-")[1]  # Extract type (e.g., garbage, recycling)
-        event_styles = event.get("style", "")
-        event_left = _extract_css_value(event_styles, "left")
-        event_top = _extract_css_value(event_styles, "top")
-        if event_left is not None and event_top is not None:
-            events.append({
-                "type": event_type,
-                "left": event_left,
-                "top": event_top,
-            })
+        for cell in cells:
+            data_date = cell["data-date"]
+            date_obj = datetime.strptime(data_date, "%Y-%m-%d")
+            if date_obj.month == current_month and date_obj.year == current_year:
+                dates[data_date] = {"collections": []}
 
-    return events
+        # Extract collection event divs
+        event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
+        events = []
+        for event in event_divs:
+            event_id = event.get("id")
+            event_type = event_id.split("-")[1]  # Extract type (e.g., garbage, recycling)
+            event_styles = event.get("style", "")
+            event_left_match = re.search(r"left: (\d+)", event_styles)
+            event_top_match = re.search(r"top: (\d+)", event_styles)
+            if event_left_match and event_top_match:
+                events.append({
+                    "type": event_type,
+                    "left": int(event_left_match.group(1)),
+                    "top": int(event_top_match.group(1)),
+                })
 
-def _extract_css_value(style, property_name):
-    """Extract numerical value of a CSS property from a style string."""
-    match = re.search(fr"{property_name}: (\d+)", style)
-    return int(match.group(1)) if match else None
+        # Match event divs to table cells by inferred positions
+        cell_width = 62  # Adjusted for padding or spacing around cells
+        cell_height = 62  # Adjusted for padding or spacing around cells
 
-def _map_events_to_dates(events, dates):
-    """Map collection events to their corresponding dates."""
-    cell_width, cell_height = 62, 62  # Adjusted for spacing
-    cells = list(dates.keys())
+        for event in events:
+            # Adjust for potential offsets due to spacing
+            adjusted_left = event["left"]
+            adjusted_top = event["top"] - 2
 
-    for event in events:
-        adjusted_left = event["left"]
-        adjusted_top = event["top"] - 2
-        event_row = adjusted_top // cell_height
-        event_col = adjusted_left // cell_width
-        cell_index = event_row * 7 + event_col  # Assuming 7 columns (days of the week)
+            event_row = adjusted_top // cell_height
+            event_col = adjusted_left // cell_width
 
-        if 0 <= cell_index < len(cells):
-            data_date = cells[cell_index]
-            if event["type"] not in dates[data_date]["collections"]:
-                dates[data_date]["collections"].append(event["type"])
+            # Get the corresponding cell by row and column
+            cell_index = event_row * 7 + event_col  # Assuming 7 columns (days of the week)
+            if 0 <= cell_index < len(cells):
+                data_date = cells[cell_index]["data-date"]
+                if data_date in dates:
+                    if event["type"] not in dates[data_date]["collections"]:
+                        dates[data_date]["collections"].append(event["type"])
 
-def _group_dates_into_weeks(dates):
-    """Group dates into weeks."""
-    current_month = datetime.now().month
-    weeks = {}
+        # Group dates into weeks
+        weeks = {}
+        for date_str, info in dates.items():
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            week_start = date_obj - timedelta(days=date_obj.weekday())  # Get the start of the week (Monday)
+            week_start_str = week_start.strftime("%Y-%m-%d")
 
-    for date_str, info in dates.items():
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-        week_start = date_obj - timedelta(days=date_obj.weekday())  # Get start of the week
-        week_start_str = week_start.strftime("%Y-%m-%d")
+            if week_start_str not in weeks:
+                weeks[week_start_str] = []
 
-        if week_start_str not in weeks:
-            weeks[week_start_str] = []
+            weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
 
-        weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
+        # Adjust weeks to include only the current month's dates
+        for week_start in list(weeks.keys()):
+            weeks[week_start] = [
+                day for day in weeks[week_start]
+                if datetime.strptime(day["date"], "%Y-%m-%d").month == current_month
+            ]
+            if not weeks[week_start]:  # Remove empty weeks
+                del weeks[week_start]
 
-    # Remove weeks with no dates in the current month
-    weeks = {
-        week_start: [
-            day for day in days if datetime.strptime(day["date"], "%Y-%m-%d").month == current_month
-        ]
-        for week_start, days in weeks.items()
-    }
-    return {k: v for k, v in weeks.items() if v}
+        # Print the results
+        for week_start, days in weeks.items():
+            print(f"Week of {week_start}:")
+            for day in days:
+                collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
+                print(f"  Date: {day['date']}, Collections: {collections}")
 
-def _print_weeks(weeks):
-    """Print the grouped weeks and their collection events."""
-    for week_start, days in weeks.items():
-        print(f"Week of {week_start}:")
-        for day in days:
-            collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
-            print(f"  Date: {day['date']}, Collections: {collections}")
+        browser.close()
+        return weeks
