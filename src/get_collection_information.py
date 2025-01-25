@@ -1,30 +1,10 @@
-# ----------------------------
-# Imports
-# ----------------------------
-
 import os
 import re
 from datetime import datetime, timedelta
-
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 
-# ----------------------------
-# Configuration
-# ----------------------------
-
-# Load environment variables
-load_dotenv()
-
-# ----------------------------
-# Main Function
-# ----------------------------
-
 def scrape_with_playwright():
-    """
-    Main function to scrape the Recology collection calendar using Playwright.
-    """
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
     address = os.environ["address"]
 
@@ -34,30 +14,21 @@ def scrape_with_playwright():
         page = context.new_page()
 
         try:
-            # Navigate to the calendar page and retrieve iframe content
             _navigate_to_calendar_page(page, url, address)
             iframe_content = _get_iframe_content(page)
 
-            # Extract data and process it
             dates = _extract_calendar_dates(iframe_content)
             events = _extract_collection_events(iframe_content)
             _map_events_to_dates(events, dates)
             weeks = _group_dates_into_weeks(dates)
 
-            # Print and return results
             _print_weeks(weeks)
             return weeks
         finally:
             browser.close()
 
-# ----------------------------
-# Helper Functions
-# ----------------------------
-
 def _navigate_to_calendar_page(page, url, address):
-    """
-    Navigate to the collection calendar page and enter the address.
-    """
+    """Navigate to the collection calendar page and enter the address."""
     page.goto(url)
     page.wait_for_selector("#row-input-0")
     page.fill("#row-input-0", address)
@@ -65,23 +36,15 @@ def _navigate_to_calendar_page(page, url, address):
     page.wait_for_selector("iframe#recollect-frame")
 
 def _get_iframe_content(page):
-    """
-    Retrieve the content of the iframe containing the calendar.
-    """
+    """Retrieve the content of the iframe containing the calendar."""
     iframe = page.frame(name="recollect")
     if not iframe:
         raise Exception("Iframe not found")
     iframe.wait_for_selector("table.fc-border-separate")
     return iframe.content()
 
-# ----------------------------
-# Data Extraction Functions
-# ----------------------------
-
 def _extract_calendar_dates(content):
-    """
-    Extract dates from the calendar table.
-    """
+    """Extract dates from the calendar table."""
     soup = BeautifulSoup(content, "html.parser")
     calendar_table = soup.find("table", class_="fc-border-separate")
     if not calendar_table:
@@ -101,9 +64,7 @@ def _extract_calendar_dates(content):
     return dates
 
 def _extract_collection_events(content):
-    """
-    Extract collection events from the iframe content.
-    """
+    """Extract collection events from the iframe content."""
     soup = BeautifulSoup(content, "html.parser")
     event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
     events = []
@@ -124,20 +85,12 @@ def _extract_collection_events(content):
     return events
 
 def _extract_css_value(style, property_name):
-    """
-    Extract numerical value of a CSS property from a style string.
-    """
+    """Extract numerical value of a CSS property from a style string."""
     match = re.search(fr"{property_name}: (\d+)", style)
     return int(match.group(1)) if match else None
 
-# ----------------------------
-# Data Mapping and Grouping
-# ----------------------------
-
 def _map_events_to_dates(events, dates):
-    """
-    Map collection events to their corresponding dates.
-    """
+    """Map collection events to their corresponding dates."""
     cell_width, cell_height = 62, 62  # Adjusted for spacing
     cells = list(dates.keys())
 
@@ -154,9 +107,7 @@ def _map_events_to_dates(events, dates):
                 dates[data_date]["collections"].append(event["type"])
 
 def _group_dates_into_weeks(dates):
-    """
-    Group dates into weeks.
-    """
+    """Group dates into weeks."""
     current_month = datetime.now().month
     weeks = {}
 
@@ -179,14 +130,8 @@ def _group_dates_into_weeks(dates):
     }
     return {k: v for k, v in weeks.items() if v}
 
-# ----------------------------
-# Output Functions
-# ----------------------------
-
 def _print_weeks(weeks):
-    """
-    Print the grouped weeks and their collection events.
-    """
+    """Print the grouped weeks and their collection events."""
     for week_start, days in weeks.items():
         print(f"Week of {week_start}:")
         for day in days:
