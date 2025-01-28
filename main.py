@@ -16,10 +16,17 @@ from src.led_configuration import update_leds_today, animation_manager
 # Configuration
 # ----------------------------
 
+# Log file path
+LOG_FILE = "garbage_collection_log.txt"
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,  # Set to DEBUG for detailed logs
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+handlers=[
+        logging.FileHandler(LOG_FILE, mode='w'),  # Overwrite log file on restart
+        logging.StreamHandler()  # Also log to the console
+    ]
 )
 logger = logging.getLogger(__name__)
 
