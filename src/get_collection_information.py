@@ -4,8 +4,12 @@ from dotenv import load_dotenv
 import re
 import os
 from datetime import datetime, timedelta
+import logging
 
 load_dotenv()
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
@@ -119,12 +123,12 @@ def scrape_with_playwright():
             if not weeks[week_start]:  # Remove empty weeks
                 del weeks[week_start]
 
-        # Print the results
+        # Log the results
         for week_start, days in weeks.items():
-            print(f"Week of {week_start}:")
+            logger.info(f"Week of {week_start}:")
             for day in days:
                 collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
-                print(f"  Date: {day['date']}, Collections: {collections}")
+                logger.info(f"  Date: {day['date']}, Collections: {collections}")
 
         browser.close()
         return weeks
