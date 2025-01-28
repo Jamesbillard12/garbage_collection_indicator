@@ -138,6 +138,7 @@ def schedule_daily_run(hour=6, minute=0):
             # If the scheduled time has already passed today, set it for tomorrow
             if now > scheduled_time:
                 scheduled_time += timedelta(days=1)
+                logger.info(f"New scheduled time: {scheduled_time}")
 
             # Calculate the wait time in seconds
             wait_time = (scheduled_time - now).total_seconds()
@@ -147,6 +148,7 @@ def schedule_daily_run(hour=6, minute=0):
             time.sleep(wait_time)
 
             # Run the process at the scheduled time
+            logger.info(f"Running process at scheduled time: {scheduled_time}")
             fetch_or_load_and_update_leds()
 
     # Run the scheduler in a separate thread
