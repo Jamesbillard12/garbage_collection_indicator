@@ -39,7 +39,7 @@ def scrape_with_playwright():
         # Switch to the iframe
         iframe = page.frame(name="recollect")
         if not iframe:
-            logger.info("Iframe not found")
+            logger.error("Iframe not found")
             return
 
         # Wait for the calendar to load inside the iframe
@@ -52,7 +52,7 @@ def scrape_with_playwright():
         # Locate the table with the class 'fc-border-separate'
         calendar_table = soup.find("table", class_="fc-border-separate")
         if not calendar_table:
-            logger.info("Calendar table not found")
+            logger.error("Calendar table not found")
             return
 
         # Extract all table rows, ensuring we skip the first row (header row)
@@ -70,37 +70,61 @@ def scrape_with_playwright():
         # Extract collection event divs
         event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
 
-        # Assume each row height is ~62px, and subtract the <thead> height (28px)
-        row_height = 62
-        thead_height = 28
+        # Constants based on computed styles
+        row_height = 55  # Each week row is 55px tall
+        event_stack_height = 16  # Each event within a day increases top by 16px
+        first_event_top = 31  # The first event in a week starts at 31px
 
-        # Compute estimated Y positions for each date cell
-        cell_positions = {}
-        for i, cell in enumerate(sorted_cells):
-            cell_positions[cell["data-date"]] = (i // 7) * row_height + thead_height  # Calculate Y position
+        # Mapping of `left` positions to days of the week (Sunday-starting)
+        day_mapping = {
+            4: 0,  # Sunday (Estimate)
+            74: 1,  # Monday
+            144: 2,  # Tuesday (Estimate)
+            214: 3,  # Wednesday
+            284: 4,  # Thursday
+            354: 5,  # Friday (Estimate)
+            424: 6  # Saturday (Estimate)
+        }
 
         # Match event divs to table cells dynamically
         for event in event_divs:
             event_id = event.get("id")
             event_type = event_id.split("-")[1]  # Extract type (e.g., garbage, recycling)
             event_styles = event.get("style", "")
-            event_top_match = re.search(r"top: (\d+)", event_styles)
 
-            if event_top_match:
-                event_top = int(event_top_match.group(1)) - thead_height  # Adjust for <thead> height
+            # Extract `top` and `left` positions
+            event_top_match = re.search(r"top: (\d+)px", event_styles)
+            event_left_match = re.search(r"left: (\d+)px", event_styles)
 
-                # Find the closest matching `td[data-date]` based on vertical position
-                closest_date = min(cell_positions, key=lambda date: abs(cell_positions[date] - event_top))
+            if event_top_match and event_left_match:
+                event_top = int(event_top_match.group(1))
+                event_left = int(event_left_match.group(1))
 
-                # Assign the event to the correct date
-                if event_type not in dates[closest_date]["collections"]:
-                    dates[closest_date]["collections"].append(event_type)
+                # Determine the week based on `top`
+                week_index = (event_top - first_event_top) // row_height  # Row in the calendar
+
+                # Find the correct day using `left`
+                closest_day = min(day_mapping.keys(), key=lambda x: abs(x - event_left))
+                day_index = day_mapping[closest_day]  # Convert `left` to day of the week (Sunday start)
+
+                # Get Sunday of each week
+                week_start_dates = sorted(set(dates.keys()))[::7]  # Get Sundays for each week
+                if 0 <= week_index < len(week_start_dates):
+                    week_start = week_start_dates[week_index]
+
+                    # Compute the correct date for this event
+                    event_date_obj = datetime.strptime(week_start, "%Y-%m-%d") + timedelta(days=day_index)
+                    event_date = event_date_obj.strftime("%Y-%m-%d")
+
+                    # Assign the event to the correct date
+                    if event_date in dates and event_type not in dates[event_date]["collections"]:
+                        dates[event_date]["collections"].append(event_type)
 
         # Group dates into weeks
         weeks = {}
         for date_str, info in dates.items():
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            week_start = date_obj - timedelta(days=date_obj.weekday())  # Get the start of the week (Monday)
+            week_start = date_obj - timedelta(days=date_obj.weekday() + 1)  # Get the start of the week (Sunday)
             week_start_str = week_start.strftime("%Y-%m-%d")
 
             if week_start_str not in weeks:
