@@ -87,7 +87,7 @@ def scrape_with_playwright():
         for event in events:
             # Adjust for potential offsets due to spacing
             adjusted_left = event["left"]
-            adjusted_top = event["top"] - 2
+            adjusted_top = event["top"] - 1
 
             event_row = adjusted_top // cell_height
             event_col = adjusted_left // cell_width
