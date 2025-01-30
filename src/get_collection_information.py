@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
-    address = os.getenv("address")  # Use os.getenv to handle missing values gracefully
+    address = os.getenv("address")  # Use os.getenv to prevent crashes
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)  # Set headless=False for debugging
@@ -36,7 +36,7 @@ def scrape_with_playwright():
         # Wait for the iframe to load after the search
         page.wait_for_selector("iframe#recollect-frame")
 
-        # Get the iframe content
+        # Switch to the iframe
         iframe = page.frame(name="recollect")
         if not iframe:
             print("Iframe not found")
@@ -45,35 +45,45 @@ def scrape_with_playwright():
         # Wait for the calendar to load inside the iframe
         iframe.wait_for_selector("table.fc-border-separate")
 
-        # Extract page source
-        content = iframe.content()
-        soup = BeautifulSoup(content, "html.parser")
-
         # Extract all calendar date cells
-        cells = soup.find_all("td", {"data-date": True})
-        dates = {cell["data-date"]: {"collections": []} for cell in cells}
+        cells = iframe.query_selector_all("td[data-date]")
+        dates = {cell.get_attribute("data-date"): {"collections": []} for cell in cells}
 
-        # Extract collection events
-        event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
+        # Extract event elements
+        event_divs = iframe.query_selector_all("div[id^='rCevt-']")
+
         for event in event_divs:
-            event_type = event["id"].split("-")[1]  # e.g., "garbage", "recycling"
+            event_type = event.get_attribute("id").split("-")[1]  # e.g., "garbage", "recycling"
 
-            # Find the closest parent that aligns with the calendar
-            parent_td = event.find_parent("td", {"data-date": True})
-            if parent_td:
-                data_date = parent_td["data-date"]
+            # Get event's on-screen position
+            event_box = event.bounding_box()
+            if not event_box:
+                continue  # Skip if bounding box is not available
+
+            event_x, event_y = event_box["x"], event_box["y"]
+
+            # Find the nearest td based on Y position
+            closest_td = None
+            min_distance = float("inf")
+
+            for cell in cells:
+                cell_box = cell.bounding_box()
+                if not cell_box:
+                    continue
+
+                cell_x, cell_y = cell_box["x"], cell_box["y"]
+
+                # Compute vertical distance
+                distance = abs(event_y - cell_y)
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_td = cell
+
+            # If we found a match, assign the event to that date
+            if closest_td:
+                data_date = closest_td.get_attribute("data-date")
                 if data_date in dates:
                     dates[data_date]["collections"].append(event_type)
-
-        # If events are still not inside TDs, infer positions based on ordering
-        if not any(dates[d]["collections"] for d in dates):
-            all_dates = list(dates.keys())  # Ordered list of date strings
-
-            # Extract event elements and align them sequentially to the date order
-            for i, event in enumerate(event_divs):
-                event_type = event["id"].split("-")[1]
-                if i < len(all_dates):  # Ensure index is within bounds
-                    dates[all_dates[i]]["collections"].append(event_type)
 
         # Log and return data
         for date, info in dates.items():
