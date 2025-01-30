@@ -57,11 +57,13 @@ def format_schedule(schedule):
     return json.dumps(schedule, indent=4) if isinstance(schedule, dict) else str(schedule)
 
 
-def turn_off_leds():
+def turn_off_leds(show_log):
     """
     Turn off all LEDs by setting their color to off.
     """
-    logger.info("Turning off LEDs.")
+    if show_log:
+        logger.info("Turning off LEDs.")
+
     pixels.fill(COLOR_OFF)
     pixels.show()
 
@@ -113,11 +115,12 @@ animation_manager = AnimationManager()
 # Animation Functions
 # ----------------------------
 
-def pulsate_white(steps=50, interval=0.05):
+def pulsate_white(show_log, steps=50, interval=0.05):
     """
     Make the LEDs pulsate white with a smooth breathing effect.
     """
-    logger.info("Starting pulsating white effect.")
+    if show_log:
+        logger.info("Starting pulsating white effect.")
     try:
         while True:
             current, params = animation_manager.get_animation()
@@ -142,11 +145,13 @@ def pulsate_white(steps=50, interval=0.05):
         logger.error(f"Pulsating white effect failed: {e}")
 
 
-def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
+def blink_red_and_turn_off(show_log, blink_count=5, blink_interval=0.5):
     """
     Make all LEDs blink red a specified number of times and then turn them off.
     """
-    logger.info(f"Blinking all LEDs red {blink_count} times, then turning them off.")
+    if show_log:
+        logger.info(f"Blinking all LEDs red {blink_count} times, then turning them off.")
+
     for _ in range(blink_count):
         current, params = animation_manager.get_animation()
         if current != 'blink_red_and_turn_off':
@@ -163,11 +168,13 @@ def blink_red_and_turn_off(blink_count=5, blink_interval=0.5):
     animation_manager.set_animation('')
 
 
-def set_leds(garbage_on, organics_on, recycling_on):
+def set_leds(show_log, garbage_on, organics_on, recycling_on):
     """
     Set LED colors based on collection status for groups of 8 LEDs.
     """
-    logger.info(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")
+    if show_log:
+        logger.info(f"Setting LEDs: Garbage={garbage_on}, Organics={organics_on}, Recycling={recycling_on}")
+
     garbage_color = COLOR_GARBAGE if garbage_on else COLOR_WHITE
     organics_color = COLOR_ORGANIC if organics_on else COLOR_WHITE
     recycling_color = COLOR_RECYCLING if recycling_on else COLOR_WHITE
@@ -183,16 +190,17 @@ def set_leds(garbage_on, organics_on, recycling_on):
     pixels.show()
 
 
-def set_holiday_lights():
+def set_holiday_lights(show_log):
     """
     Set all LEDs to solid red for a holiday.
     """
-    logger.info("Setting LEDs to solid red for holiday.")
+    if show_log:
+        logger.info("Setting LEDs to solid red for holiday.")
     pixels.fill(COLOR_HOLIDAY)
     pixels.show()
 
 
-def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
+def fade_to_color(show_log, collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5):
     """
     Fade LEDs between base color and collection colors.
 
@@ -210,8 +218,8 @@ def fade_to_color(collections, BASE_COLOR, steps=100, interval=0.02, hold_time=5
                 return
             if not params or "fade_state" not in params:
                 return
-
-            logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back.")
+            if show_log:
+                logger.info(f"Starting at {BASE_COLOR}, fading LEDs to collection colors, holding, and cycling back.")
             garbage_color = COLOR_GARBAGE if "garbage" in collections else COLOR_NO
             organics_color = COLOR_ORGANIC if "organics" in collections else COLOR_NO
             recycling_color = COLOR_RECYCLING if "recycling" in collections else COLOR_NO
@@ -368,44 +376,57 @@ def update_leds_today():
 
 def run_animations():
     """
-    Main loop to manage animations.
+    Main loop to manage animations, only updating LEDs if the animation changes.
     """
+    last_animation = None  # Track last animation state
+    last_params = None  # Track last animation parameters
+
     while True:
         name, params = animation_manager.get_animation()
-        if name == 'pulsate_white':
-            pulsate_white()
-        elif name == 'blink_red_and_turn_off':
-            blink_red_and_turn_off()
-        elif name == 'set_leds':
-            collection_state = params.get(
-                'collection_state',
-                {"garbage_on": False, "organics_on": False, "recycling_on": False},
-            )
-            set_leds(
-                collection_state["garbage_on"],
-                collection_state["organics_on"],
-                collection_state["recycling_on"],
-            )
-        elif name == "set_holiday_lights":
-            set_holiday_lights()
-        elif name == "fade_to_color":
-            fade_state = params.get(
-                'fade_state',
-                {
-                    "collections": [],
-                    "base_color": (255, 255, 255),
-                    "steps": 100,
-                    "interval": 0.02,
-                }
-            )
-            fade_to_color(
-                fade_state["collections"],
-                fade_state["base_color"],
-                fade_state["steps"],
-                fade_state["interval"],
-            )
-        else:
-            turn_off_leds()
+        show_log = False
+
+        if name != last_animation or params != last_params:
+            show_log = True
+            last_animation = name
+            last_params = params  # Update last params to prevent duplicate runs
+
+            if name == 'pulsate_white':
+                pulsate_white(show_log)
+            elif name == 'blink_red_and_turn_off':
+                blink_red_and_turn_off(show_log)
+            elif name == 'set_leds':
+                collection_state = params.get(
+                    'collection_state',
+                    {"garbage_on": False, "organics_on": False, "recycling_on": False},
+                )
+                set_leds(
+                    collection_state["garbage_on"],
+                    collection_state["organics_on"],
+                    collection_state["recycling_on"],
+                )
+            elif name == "set_holiday_lights":
+                set_holiday_lights(show_log)
+            elif name == "fade_to_color":
+                fade_state = params.get(
+                    'fade_state',
+                    {
+                        "collections": [],
+                        "base_color": (255, 255, 255),
+                        "steps": 100,
+                        "interval": 0.02,
+                    }
+                )
+                fade_to_color(
+                    show_log,
+                    fade_state["collections"],
+                    fade_state["base_color"],
+                    fade_state["steps"],
+                    fade_state["interval"]
+                )
+            else:
+                turn_off_leds(show_log)
+
+        time.sleep(0.1)  # Prevent CPU overuse
 
 # ----------------------------
 # Threads and Startup
