@@ -114,14 +114,14 @@ def scrape_with_playwright():
 
             weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
 
-        # Adjust weeks to include only the current month's dates
-        for week_start in list(weeks.keys()):
-            weeks[week_start] = [
-                day for day in weeks[week_start]
-                if datetime.strptime(day["date"], "%Y-%m-%d").month == current_month
-            ]
-            if not weeks[week_start]:  # Remove empty weeks
-                del weeks[week_start]
+        # # Adjust weeks to include only the current month's dates
+        # for week_start in list(weeks.keys()):
+        #     weeks[week_start] = [
+        #         day for day in weeks[week_start]
+        #         if datetime.strptime(day["date"], "%Y-%m-%d").month == current_month
+        #     ]
+        #     if not weeks[week_start]:  # Remove empty weeks
+        #         del weeks[week_start]
 
         # Log the results
         for week_start, days in weeks.items():
