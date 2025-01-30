@@ -119,17 +119,44 @@ def scrape_with_playwright():
                     if event_date in dates and event_type not in dates[event_date]["collections"]:
                         dates[event_date]["collections"].append(event_type)
 
-        # Group dates into weeks starting from Sunday
+        # Fix week grouping and remove empty first week
         weeks = {}
-        for date_str, info in dates.items():
+
+        for date_str, info in sorted(dates.items()):
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            week_start = date_obj - timedelta(days=date_obj.weekday() + 1)  # Get the start of the week (Sunday)
+
+            # Get the correct Sunday start for this week
+            week_start = date_obj - timedelta(days=date_obj.weekday() + 1)  # Adjust for Sunday-based weeks
             week_start_str = week_start.strftime("%Y-%m-%d")
 
+            # Ensure this Sunday exists in the dictionary
             if week_start_str not in weeks:
                 weeks[week_start_str] = []
 
-            weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
+            # Handle holiday shifts
+            if "holiday" in info["collections"]:
+                # Move collection to the next day
+                new_date_obj = date_obj + timedelta(days=1)
+                new_date_str = new_date_obj.strftime("%Y-%m-%d")
+
+                if new_date_str not in weeks:
+                    weeks[new_date_str] = []
+
+                weeks[new_date_str].append({
+                    "date": new_date_str,
+                    "collections": [c for c in info["collections"] if c != "holiday"]
+                })
+            else:
+                # Add to the correct week
+                weeks[week_start_str].append({
+                    "date": date_str,
+                    "collections": info["collections"]
+                })
+
+        # **Remove empty first week if it has no collections**
+        first_week = min(weeks.keys())  # Get the first recorded week
+        if all(len(day["collections"]) == 0 for day in weeks[first_week]):
+            del weeks[first_week]  # Remove the week if it's empty
 
         # Log the results
         logger.info(f"Final Weekly Schedule: {weeks}")
