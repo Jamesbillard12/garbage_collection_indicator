@@ -146,7 +146,11 @@ def scrape_with_playwright():
         final_weeks = group_by_weeks(dates)
 
         # Log the results
-        logger.info(f"Final Weekly Schedule: {final_weeks}")
+        for week_start, days in final_weeks.items():
+            logger.info(f"Week of {week_start}:")
+            for day in days:
+                collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
+                logger.info(f"  Date: {day['date']}, Collections: {collections}")
 
         browser.close()
         return final_weeks
