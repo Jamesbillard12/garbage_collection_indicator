@@ -277,7 +277,6 @@ def update_leds_today():
     today_or_tomorrow_handled = False
 
     for week_key, daily_schedules in schedule.items():
-        logger.info('Daily Schedule:', daily_schedules)
         for daily_schedule in daily_schedules:
             date_obj = datetime.strptime(daily_schedule["date"], "%Y-%m-%d").date()
 

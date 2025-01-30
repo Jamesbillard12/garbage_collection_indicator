@@ -119,7 +119,7 @@ def scrape_with_playwright():
                     if event_date in dates and event_type not in dates[event_date]["collections"]:
                         dates[event_date]["collections"].append(event_type)
 
-        # Fix week grouping and remove empty first week
+        # Fix week grouping and remove unnecessary duplicate weeks
         weeks = {}
 
         for date_str, info in sorted(dates.items()):
@@ -133,16 +133,13 @@ def scrape_with_playwright():
             if week_start_str not in weeks:
                 weeks[week_start_str] = []
 
-            # Handle holiday shifts
+            # Handle holiday shifts correctly without creating duplicate weeks
             if "holiday" in info["collections"]:
-                # Move collection to the next day
+                # Move collection to the next day but keep in the same week
                 new_date_obj = date_obj + timedelta(days=1)
                 new_date_str = new_date_obj.strftime("%Y-%m-%d")
 
-                if new_date_str not in weeks:
-                    weeks[new_date_str] = []
-
-                weeks[new_date_str].append({
+                weeks[week_start_str].append({
                     "date": new_date_str,
                     "collections": [c for c in info["collections"] if c != "holiday"]
                 })
@@ -153,10 +150,11 @@ def scrape_with_playwright():
                     "collections": info["collections"]
                 })
 
-        # **Remove empty first week if it has no collections**
-        first_week = min(weeks.keys())  # Get the first recorded week
-        if all(len(day["collections"]) == 0 for day in weeks[first_week]):
-            del weeks[first_week]  # Remove the week if it's empty
+        # **Remove incorrect duplicate weeks**
+        week_keys = list(weeks.keys())
+        for week in week_keys:
+            if len(weeks[week]) == 1 and not weeks[week][0]["collections"]:
+                del weeks[week]  # Remove weeks that contain only empty days
 
         # Log the results
         logger.info(f"Final Weekly Schedule: {weeks}")
