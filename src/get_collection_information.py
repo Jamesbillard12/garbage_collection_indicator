@@ -38,7 +38,7 @@ def scrape_with_playwright():
         # Switch to the iframe
         iframe = page.frame(name="recollect")
         if not iframe:
-            print("Iframe not found")
+            logger.error("Iframe not found")
             return
 
         # Wait for the calendar to load inside the iframe
@@ -51,14 +51,12 @@ def scrape_with_playwright():
         # Locate the table with the class 'fc-border-separate'
         calendar_table = soup.find("table", class_="fc-border-separate")
         if not calendar_table:
-            print("Calendar table not found")
+            logger.error("Calendar table not found")
             return
 
         # Extract all table cells with data-date
         dates = {}
         cells = calendar_table.find_all("td", {"data-date": True})
-        current_month = datetime.now().month
-        current_year = datetime.now().year
 
         for cell in cells:
             data_date = cell["data-date"]
@@ -87,7 +85,7 @@ def scrape_with_playwright():
         for event in events:
             # Adjust for potential offsets due to spacing
             adjusted_left = event["left"]
-            adjusted_top = event["top"] - 2
+            adjusted_top = event["top"]
 
             event_row = adjusted_top // cell_height
             event_col = adjusted_left // cell_width
