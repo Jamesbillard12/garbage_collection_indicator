@@ -62,9 +62,7 @@ def scrape_with_playwright():
 
         for cell in cells:
             data_date = cell["data-date"]
-            date_obj = datetime.strptime(data_date, "%Y-%m-%d")
-            if date_obj.month == current_month and date_obj.year == current_year:
-                dates[data_date] = {"collections": []}
+            dates[data_date] = {"collections": []}
 
         # Extract collection event divs
         event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
@@ -113,15 +111,6 @@ def scrape_with_playwright():
                 weeks[week_start_str] = []
 
             weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
-
-        # # Adjust weeks to include only the current month's dates
-        # for week_start in list(weeks.keys()):
-        #     weeks[week_start] = [
-        #         day for day in weeks[week_start]
-        #         if datetime.strptime(day["date"], "%Y-%m-%d").month == current_month
-        #     ]
-        #     if not weeks[week_start]:  # Remove empty weeks
-        #         del weeks[week_start]
 
         # Log the results
         for week_start, days in weeks.items():
