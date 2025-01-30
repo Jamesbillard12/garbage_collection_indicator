@@ -11,9 +11,10 @@ load_dotenv()
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
-    address = os.environ["address"]
+    address = os.getenv("address")  # Use os.getenv to prevent crashes
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)  # Use headless=True for headless mode
@@ -54,49 +55,46 @@ def scrape_with_playwright():
             logger.error("Calendar table not found")
             return
 
-        # Extract all table cells with data-date
-        dates = {}
-        cells = calendar_table.find_all("td", {"data-date": True})
+        # Extract all table rows, ensuring we skip the first row (header row)
+        rows = calendar_table.find_all("tr")[1:]  # Skip <thead> (Days of the Week)
 
-        for cell in cells:
-            data_date = cell["data-date"]
-            dates[data_date] = {"collections": []}
+        # Extract all date-containing cells (td[data-date])
+        cells = [td for row in rows for td in row.find_all("td", {"data-date": True})]
+
+        # Ensure cells are sorted correctly by date
+        sorted_cells = sorted(cells, key=lambda td: td["data-date"])
+
+        # Extract dates dictionary
+        dates = {cell["data-date"]: {"collections": []} for cell in sorted_cells}
 
         # Extract collection event divs
         event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
-        events = []
+
+        # Assume each row height is ~62px, and subtract the <thead> height (28px)
+        row_height = 62
+        thead_height = 28
+
+        # Compute estimated Y positions for each date cell
+        cell_positions = {}
+        for i, cell in enumerate(sorted_cells):
+            cell_positions[cell["data-date"]] = (i // 7) * row_height + thead_height  # Calculate Y position
+
+        # Match event divs to table cells dynamically
         for event in event_divs:
             event_id = event.get("id")
             event_type = event_id.split("-")[1]  # Extract type (e.g., garbage, recycling)
             event_styles = event.get("style", "")
-            event_left_match = re.search(r"left: (\d+)", event_styles)
             event_top_match = re.search(r"top: (\d+)", event_styles)
-            if event_left_match and event_top_match:
-                events.append({
-                    "type": event_type,
-                    "left": int(event_left_match.group(1)),
-                    "top": int(event_top_match.group(1)),
-                })
 
-        # Match event divs to table cells by inferred positions
-        cell_width = 62  # Adjusted for padding or spacing around cells
-        cell_height = 62  # Adjusted for padding or spacing around cells
+            if event_top_match:
+                event_top = int(event_top_match.group(1)) - thead_height  # Adjust for <thead> height
 
-        for event in events:
-            # Adjust for potential offsets due to spacing
-            adjusted_left = event["left"]
-            adjusted_top = event["top"]
+                # Find the closest matching `td[data-date]` based on vertical position
+                closest_date = min(cell_positions, key=lambda date: abs(cell_positions[date] - event_top))
 
-            event_row = adjusted_top // cell_height
-            event_col = adjusted_left // cell_width
-
-            # Get the corresponding cell by row and column
-            cell_index = event_row * 7 + event_col  # Assuming 7 columns (days of the week)
-            if 0 <= cell_index < len(cells):
-                data_date = cells[cell_index]["data-date"]
-                if data_date in dates:
-                    if event["type"] not in dates[data_date]["collections"]:
-                        dates[data_date]["collections"].append(event["type"])
+                # Assign the event to the correct date
+                if event_type not in dates[closest_date]["collections"]:
+                    dates[closest_date]["collections"].append(event_type)
 
         # Group dates into weeks
         weeks = {}
