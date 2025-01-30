@@ -3,20 +3,21 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import re
 import os
-from datetime import datetime, timedelta
 import logging
 
+# Load environment variables
 load_dotenv()
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
-    address = os.environ["address"]
+    address = os.getenv("address")  # Use os.getenv to handle missing values gracefully
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # Use headless=True for headless mode
+        browser = p.chromium.launch(headless=True)  # Set headless=False for debugging
         context = browser.new_context()
         page = context.new_page()
 
@@ -35,7 +36,7 @@ def scrape_with_playwright():
         # Wait for the iframe to load after the search
         page.wait_for_selector("iframe#recollect-frame")
 
-        # Switch to the iframe
+        # Get the iframe content
         iframe = page.frame(name="recollect")
         if not iframe:
             print("Iframe not found")
@@ -44,80 +45,40 @@ def scrape_with_playwright():
         # Wait for the calendar to load inside the iframe
         iframe.wait_for_selector("table.fc-border-separate")
 
-        # Get the iframe content
+        # Extract page source
         content = iframe.content()
         soup = BeautifulSoup(content, "html.parser")
 
-        # Locate the table with the class 'fc-border-separate'
-        calendar_table = soup.find("table", class_="fc-border-separate")
-        if not calendar_table:
-            print("Calendar table not found")
-            return
+        # Extract all calendar date cells
+        cells = soup.find_all("td", {"data-date": True})
+        dates = {cell["data-date"]: {"collections": []} for cell in cells}
 
-        # Extract all table cells with data-date
-        dates = {}
-        cells = calendar_table.find_all("td", {"data-date": True})
-        current_month = datetime.now().month
-        current_year = datetime.now().year
-
-        for cell in cells:
-            data_date = cell["data-date"]
-            dates[data_date] = {"collections": []}
-
-        # Extract collection event divs
+        # Extract collection events
         event_divs = soup.find_all("div", id=re.compile(r"^rCevt-"))
-        events = []
         for event in event_divs:
-            event_id = event.get("id")
-            event_type = event_id.split("-")[1]  # Extract type (e.g., garbage, recycling)
-            event_styles = event.get("style", "")
-            event_left_match = re.search(r"left: (\d+)", event_styles)
-            event_top_match = re.search(r"top: (\d+)", event_styles)
-            if event_left_match and event_top_match:
-                events.append({
-                    "type": event_type,
-                    "left": int(event_left_match.group(1)),
-                    "top": int(event_top_match.group(1)),
-                })
+            event_type = event["id"].split("-")[1]  # e.g., "garbage", "recycling"
 
-        # Match event divs to table cells by inferred positions
-        cell_width = 62  # Adjusted for padding or spacing around cells
-        cell_height = 62  # Adjusted for padding or spacing around cells
-
-        for event in events:
-            # Adjust for potential offsets due to spacing
-            adjusted_left = event["left"]
-            adjusted_top = event["top"] - 1
-
-            event_row = adjusted_top // cell_height
-            event_col = adjusted_left // cell_width
-
-            # Get the corresponding cell by row and column
-            cell_index = event_row * 7 + event_col  # Assuming 7 columns (days of the week)
-            if 0 <= cell_index < len(cells):
-                data_date = cells[cell_index]["data-date"]
+            # Find the closest parent that aligns with the calendar
+            parent_td = event.find_parent("td", {"data-date": True})
+            if parent_td:
+                data_date = parent_td["data-date"]
                 if data_date in dates:
-                    if event["type"] not in dates[data_date]["collections"]:
-                        dates[data_date]["collections"].append(event["type"])
+                    dates[data_date]["collections"].append(event_type)
 
-        # Group dates into weeks
-        weeks = {}
-        for date_str, info in dates.items():
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            week_start = date_obj - timedelta(days=date_obj.weekday())  # Get the start of the week (Monday)
-            week_start_str = week_start.strftime("%Y-%m-%d")
+        # If events are still not inside TDs, infer positions based on ordering
+        if not any(dates[d]["collections"] for d in dates):
+            all_dates = list(dates.keys())  # Ordered list of date strings
 
-            if week_start_str not in weeks:
-                weeks[week_start_str] = []
+            # Extract event elements and align them sequentially to the date order
+            for i, event in enumerate(event_divs):
+                event_type = event["id"].split("-")[1]
+                if i < len(all_dates):  # Ensure index is within bounds
+                    dates[all_dates[i]]["collections"].append(event_type)
 
-            weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
-
-        # Log the results
-        for week_start, days in weeks.items():
-            logger.info(f"Week of {week_start}:")
-            for day in days:
-                collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
-                logger.info(f"  Date: {day['date']}, Collections: {collections}")
+        # Log and return data
+        for date, info in dates.items():
+            collections_str = ", ".join(info["collections"]) if info["collections"] else "No collections"
+            logger.info(f"Date: {date}, Collections: {collections_str}")
 
         browser.close()
-        return weeks
+        return dates
