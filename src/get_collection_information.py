@@ -45,49 +45,28 @@ def scrape_with_playwright():
         # Wait for the calendar to load inside the iframe
         iframe.wait_for_selector("table.fc-border-separate")
 
-        # Extract all calendar date cells
-        cells = iframe.query_selector_all("td[data-date]")
-        dates = {cell.get_attribute("data-date"): {"collections": []} for cell in cells}
+        # Extract calendar table and event divs
+        soup = BeautifulSoup(iframe.content(), "html.parser")
 
-        # Extract event elements
-        event_divs = iframe.query_selector_all("div[id^='rCevt-']")
+        # Extract all date cells with events
+        dates = {}
 
-        for event in event_divs:
-            event_type = event.get_attribute("id").split("-")[1]  # e.g., "garbage", "recycling"
+        for td in soup.find_all("td", {"data-date": True}):
+            data_date = td["data-date"]
+            events = td.find_all("div", id=re.compile(r"^rCevt-"))
 
-            # Get event's on-screen position
-            event_box = event.bounding_box()
-            if not event_box:
-                continue  # Skip if bounding box is not available
+            # Extract collection types and remove duplicates
+            collections = list(set(event["id"].split("-")[1] for event in events))
 
-            event_x, event_y = event_box["x"], event_box["y"]
+            # Store only non-empty days
+            if collections:
+                dates[data_date] = collections
+            else:
+                dates[data_date] = ["No collections"]
 
-            # Find the nearest td based on Y position
-            closest_td = None
-            min_distance = float("inf")
-
-            for cell in cells:
-                cell_box = cell.bounding_box()
-                if not cell_box:
-                    continue
-
-                cell_x, cell_y = cell_box["x"], cell_box["y"]
-
-                # Compute vertical distance
-                distance = abs(event_y - cell_y)
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_td = cell
-
-            # If we found a match, assign the event to that date
-            if closest_td:
-                data_date = closest_td.get_attribute("data-date")
-                if data_date in dates:
-                    dates[data_date]["collections"].append(event_type)
-
-        # Log and return data
-        for date, info in dates.items():
-            collections_str = ", ".join(info["collections"]) if info["collections"] else "No collections"
+        # Log the results
+        for date, collections in sorted(dates.items()):
+            collections_str = ", ".join(collections)
             logger.info(f"Date: {date}, Collections: {collections_str}")
 
         browser.close()
