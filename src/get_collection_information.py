@@ -1,7 +1,5 @@
 from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import re
 import os
 import logging
 
@@ -17,7 +15,7 @@ def scrape_with_playwright():
     address = os.getenv("address")  # Use os.getenv to prevent crashes
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # Set headless=False for debugging
+        browser = p.chromium.launch(headless=False)  # Set headless=False for debugging
         context = browser.new_context()
         page = context.new_page()
 
@@ -42,32 +40,26 @@ def scrape_with_playwright():
             print("Iframe not found")
             return
 
-        # Wait for the calendar to load inside the iframe
-        iframe.wait_for_selector("table.fc-border-separate")
+        # Wait for events to load inside the iframe
+        iframe.wait_for_selector("div[id^='rCevt-']", timeout=5000)
 
-        # Extract calendar table and event divs
-        soup = BeautifulSoup(iframe.content(), "html.parser")
+        # Extract calendar data using Playwright's JS execution
+        calendar_data = iframe.evaluate('''() => {
+            let result = {};
+            document.querySelectorAll("td[data-date]").forEach(td => {
+                let date = td.getAttribute("data-date");
+                let events = Array.from(td.querySelectorAll("div[id^='rCevt-']"))
+                                  .map(div => div.id.split('-')[1]);  // Extract event type
 
-        # Extract all date cells with events
-        dates = {}
+                result[date] = events.length > 0 ? [...new Set(events)] : ["No collections"];
+            });
+            return result;
+        }''')
 
-        for td in soup.find_all("td", {"data-date": True}):
-            data_date = td["data-date"]
-            events = td.find_all("div", id=re.compile(r"^rCevt-"))
-
-            # Extract collection types and remove duplicates
-            collections = list(set(event["id"].split("-")[1] for event in events))
-
-            # Store only non-empty days
-            if collections:
-                dates[data_date] = collections
-            else:
-                dates[data_date] = ["No collections"]
-
-        # Log the results
-        for date, collections in sorted(dates.items()):
+        # Log and return data
+        for date, collections in sorted(calendar_data.items()):
             collections_str = ", ".join(collections)
             logger.info(f"Date: {date}, Collections: {collections_str}")
 
         browser.close()
-        return dates
+        return calendar_data
