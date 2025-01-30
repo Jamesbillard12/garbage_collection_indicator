@@ -39,7 +39,7 @@ def scrape_with_playwright():
         # Switch to the iframe
         iframe = page.frame(name="recollect")
         if not iframe:
-            logger.error("Iframe not found")
+            logger.info("Iframe not found")
             return
 
         # Wait for the calendar to load inside the iframe
@@ -52,7 +52,7 @@ def scrape_with_playwright():
         # Locate the table with the class 'fc-border-separate'
         calendar_table = soup.find("table", class_="fc-border-separate")
         if not calendar_table:
-            logger.error("Calendar table not found")
+            logger.info("Calendar table not found")
             return
 
         # Extract all table rows, ensuring we skip the first row (header row)
