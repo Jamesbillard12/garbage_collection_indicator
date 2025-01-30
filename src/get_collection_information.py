@@ -119,45 +119,34 @@ def scrape_with_playwright():
                     if event_date in dates and event_type not in dates[event_date]["collections"]:
                         dates[event_date]["collections"].append(event_type)
 
-        # Fix week grouping and remove unnecessary duplicate weeks
-        weeks = {}
+        # **New: Simplified Week Grouping**
+        def group_by_weeks(dates):
+            """
+            Groups the dates into weeks based on the first date of each row.
+            """
+            sorted_dates = sorted(dates.keys())  # Ensure dates are in order
+            weeks = {}
 
-        for date_str, info in sorted(dates.items()):
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            # Process dates in chunks of 7 (Sunday-Saturday)
+            for i in range(0, len(sorted_dates), 7):
+                week_start = sorted_dates[i]  # First day (Sunday) of the week
+                weeks[week_start] = []
 
-            # Get the correct Sunday start for this week
-            week_start = date_obj - timedelta(days=date_obj.weekday() + 1)  # Adjust for Sunday-based weeks
-            week_start_str = week_start.strftime("%Y-%m-%d")
+                for j in range(7):  # Get all 7 days in this week
+                    if i + j < len(sorted_dates):
+                        date_str = sorted_dates[i + j]
+                        weeks[week_start].append({
+                            "date": date_str,
+                            "collections": dates[date_str]["collections"]
+                        })
 
-            # Ensure this Sunday exists in the dictionary
-            if week_start_str not in weeks:
-                weeks[week_start_str] = []
+            return weeks
 
-            # Handle holiday shifts correctly without creating duplicate weeks
-            if "holiday" in info["collections"]:
-                # Move collection to the next day but keep in the same week
-                new_date_obj = date_obj + timedelta(days=1)
-                new_date_str = new_date_obj.strftime("%Y-%m-%d")
-
-                weeks[week_start_str].append({
-                    "date": new_date_str,
-                    "collections": [c for c in info["collections"] if c != "holiday"]
-                })
-            else:
-                # Add to the correct week
-                weeks[week_start_str].append({
-                    "date": date_str,
-                    "collections": info["collections"]
-                })
-
-        # **Remove incorrect duplicate weeks**
-        week_keys = list(weeks.keys())
-        for week in week_keys:
-            if len(weeks[week]) == 1 and not weeks[week][0]["collections"]:
-                del weeks[week]  # Remove weeks that contain only empty days
+        # Apply the simplified grouping
+        final_weeks = group_by_weeks(dates)
 
         # Log the results
-        logger.info(f"Final Weekly Schedule: {weeks}")
+        logger.info(f"Final Weekly Schedule: {final_weeks}")
 
         browser.close()
-        return weeks
+        return final_weeks
