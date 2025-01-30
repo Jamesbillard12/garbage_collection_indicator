@@ -11,7 +11,6 @@ load_dotenv()
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-
 def scrape_with_playwright():
     url = "https://www.recology.com/recology-king-county/shoreline/collection-calendar/"
     address = os.getenv("address")  # Use os.getenv to prevent crashes
@@ -77,13 +76,13 @@ def scrape_with_playwright():
 
         # Mapping of `left` positions to days of the week (Sunday-starting)
         day_mapping = {
-            4: 0,  # Sunday (Estimate)
-            74: 1,  # Monday
+            4: 0,    # Sunday (Estimate)
+            74: 1,   # Monday
             144: 2,  # Tuesday (Estimate)
             214: 3,  # Wednesday
             284: 4,  # Thursday
             354: 5,  # Friday (Estimate)
-            424: 6  # Saturday (Estimate)
+            424: 6   # Saturday (Estimate)
         }
 
         # Match event divs to table cells dynamically
@@ -120,7 +119,7 @@ def scrape_with_playwright():
                     if event_date in dates and event_type not in dates[event_date]["collections"]:
                         dates[event_date]["collections"].append(event_type)
 
-        # Group dates into weeks
+        # Group dates into weeks starting from Sunday
         weeks = {}
         for date_str, info in dates.items():
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
@@ -133,11 +132,7 @@ def scrape_with_playwright():
             weeks[week_start_str].append({"date": date_str, "collections": info["collections"]})
 
         # Log the results
-        for week_start, days in weeks.items():
-            logger.info(f"Week of {week_start}:")
-            for day in days:
-                collections = ", ".join(day["collections"]) if day["collections"] else "No collections"
-                logger.info(f"  Date: {day['date']}, Collections: {collections}")
+        logger.info(f"Final Weekly Schedule: {weeks}")
 
         browser.close()
         return weeks
