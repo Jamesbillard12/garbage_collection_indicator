@@ -400,6 +400,7 @@ def run_animations():
                     {"garbage_on": False, "organics_on": False, "recycling_on": False},
                 )
                 set_leds(
+                    show_log,
                     collection_state["garbage_on"],
                     collection_state["organics_on"],
                     collection_state["recycling_on"],
